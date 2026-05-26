@@ -55,10 +55,6 @@ function Header() {
 
         {/* Actions */}
         <div className="flex items-center gap-3">
-          <Link href="/auth/login" className="text-sm font-semibold px-4 py-2 rounded-lg transition-all hover:bg-slate-50"
-            style={{ color: N, border: '1.5px solid #E2E8F0' }}>
-            Entrar
-          </Link>
           <Link href="/consulta/nova" className="text-sm font-semibold px-4 py-2 rounded-lg text-white transition-all hover:opacity-90"
             style={{ backgroundColor: T }}>
             Agendar consulta
@@ -102,7 +98,7 @@ function Hero() {
             <Link href="/auth/register?role=doctor"
               className="rounded-xl px-7 py-3.5 text-sm font-semibold text-center transition-all hover:bg-slate-50"
               style={{ border: '1.5px solid #E2E8F0', color: N }}>
-              Sou médico
+              Sou médico e quero me cadastrar
             </Link>
           </div>
 
