@@ -55,7 +55,7 @@ export class ConsultationsService {
     return this.consultationRepo.save(consultation)
   }
 
-  async complete(id: string, recordData: any): Promise<{ consultation: Consultation; record: MedicalRecord }> {
+  async complete(id: string, recordData: any): Promise<{ consultation: Consultation; record: MedicalRecord[] | MedicalRecord }> {
     const consultation = await this.findById(id)
     consultation.status = 'COMPLETED'
     consultation.completedAt = new Date()

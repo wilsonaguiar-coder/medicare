@@ -2,6 +2,7 @@
   "extends": "@medicare/tsconfig/nestjs",
   "compilerOptions": {
     "baseUrl": ".",
+    "rootDir": "./src",
     "paths": {
       "@/*": ["src/*"]
     }
