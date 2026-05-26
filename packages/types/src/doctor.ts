@@ -12,6 +12,7 @@ export type Specialty =
   | 'NEUROLOGY'
   | 'ENDOCRINOLOGY'
   | 'GASTROENTEROLOGY'
+  | 'OTORHINOLARYNGOLOGY'
 
 export interface Doctor {
   id: string

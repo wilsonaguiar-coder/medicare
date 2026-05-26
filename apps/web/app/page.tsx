@@ -121,201 +121,20 @@ function Hero() {
           </div>
         </div>
 
-        {/* Right — Phone + floating cards (fixed-width so it never bleeds left) */}
-        <div className="hidden lg:block flex-shrink-0 relative" style={{ width: 480, height: 580 }}>
-
-          {/* Phone — left side of this column */}
-          <div style={{ position: 'absolute', left: 0, top: 24 }}>
-            <PhoneMockup />
-          </div>
-
-          {/* Floating: Documents card — right side */}
-          <div className="rounded-2xl p-4 bg-white"
-            style={{
-              position: 'absolute', right: 0, top: 16, width: 208,
-              boxShadow: '0 8px 32px rgba(0,0,0,0.12)', border: '1px solid #F1F5F9',
-            }}>
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-semibold" style={{ color: N }}>Seus documentos</p>
-              <button className="text-slate-400 hover:text-slate-600 text-xs leading-none">✕</button>
-            </div>
-            {[
-              { name: 'Exame de Sangue', size: 'PDF · 1.2 MB' },
-              { name: 'Raio-X Tórax',    size: 'PDF · 890 KB' },
-              { name: 'Receita Médica',  size: 'PDF · 450 KB' },
-            ].map(f => (
-              <div key={f.name} className="flex items-center gap-2 mb-2">
-                <div className="h-7 w-7 rounded-lg flex items-center justify-center flex-shrink-0"
-                  style={{ backgroundColor: '#FEF3C7' }}>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                    <polyline points="14 2 14 8 20 8" />
-                  </svg>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium truncate" style={{ color: N }}>{f.name}</p>
-                  <p className="text-xs" style={{ color: '#94A3B8' }}>{f.size}</p>
-                </div>
-                <span className="text-xs font-semibold" style={{ color: T }}>✓</span>
-              </div>
-            ))}
-            <button className="w-full rounded-lg py-1.5 text-xs font-medium mt-1"
-              style={{ border: `1px solid #E2E8F0`, color: '#64748B' }}>
-              + Adicionar documento
-            </button>
-          </div>
-
-          {/* Floating: AI Summary card — right side, lower */}
-          <div className="rounded-2xl p-4 bg-white"
-            style={{
-              position: 'absolute', right: 0, bottom: 32, width: 208,
-              boxShadow: '0 8px 32px rgba(0,0,0,0.12)', border: '1px solid #F1F5F9',
-            }}>
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-1.5">
-                <div className="h-5 w-5 rounded flex items-center justify-center flex-shrink-0"
-                  style={{ background: `linear-gradient(135deg, #7C3AED, ${T})` }}>
-                  <span className="text-white" style={{ fontSize: 9 }}>✦</span>
-                </div>
-                <p className="text-xs font-semibold" style={{ color: N }}>Resumo inteligente (IA)</p>
-              </div>
-              <button className="text-slate-400 text-xs leading-none">✕</button>
-            </div>
-            <p className="text-xs leading-relaxed" style={{ color: '#64748B' }}>
-              Exames dentro da normalidade, sem alterações significativas.
-              Hemograma normal, sem sinais de infecção. Glicemia e eletrólitos
-              dentro dos parâmetros adequados.
-            </p>
-            <p className="text-xs mt-2" style={{ color: '#94A3B8' }}>✦ Gerado por IA · 1 min atrás</p>
-          </div>
+        {/* Right — hero image */}
+        <div className="hidden lg:flex justify-center items-center flex-shrink-0">
+          <Image
+            src="/heroimg.png"
+            alt="Consulta médica online pelo Medicare"
+            width={500}
+            height={560}
+            priority
+            className="object-contain"
+          />
         </div>
 
       </div>
     </section>
-  )
-}
-
-function PhoneMockup() {
-  return (
-    <div style={{ width: 248, height: 510, position: 'relative' }}>
-      {/* Phone chassis */}
-      <div style={{
-        position: 'absolute', inset: 0,
-        borderRadius: 40,
-        backgroundColor: '#0F172A',
-        boxShadow: '0 32px 72px rgba(0,0,0,0.40), 0 0 0 2px #1E293B',
-      }} />
-      {/* Dynamic island / notch */}
-      <div style={{
-        position: 'absolute', top: 10, left: '50%', transform: 'translateX(-50%)',
-        width: 72, height: 20, borderRadius: 12,
-        backgroundColor: '#0F172A', zIndex: 20,
-      }} />
-      {/* Screen */}
-      <div style={{
-        position: 'absolute', inset: 6, borderRadius: 35,
-        backgroundColor: '#071020', overflow: 'hidden',
-      }}>
-
-        {/* ── Status bar ── */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '28px 14px 4px' }}>
-          <span style={{ color: 'white', fontSize: 11 }}>9:01</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            {/* Signal bars */}
-            {[3, 5, 7, 9].map(h => (
-              <div key={h} style={{ width: 3, height: h, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.8)' }} />
-            ))}
-            {/* Battery */}
-            <div style={{ width: 18, height: 10, borderRadius: 3, border: '1px solid rgba(255,255,255,0.6)', marginLeft: 4, position: 'relative' }}>
-              <div style={{ position: 'absolute', inset: 2, borderRadius: 1.5, backgroundColor: 'white', width: '65%' }} />
-            </div>
-          </div>
-        </div>
-
-        {/* ── Doctor name bar ── */}
-        <div style={{ textAlign: 'center', padding: '2px 0 6px' }}>
-          <p style={{ color: 'white', fontSize: 11, fontWeight: 600 }}>Dr. Gabriel Nascimento</p>
-          <p style={{ color: '#94A3B8', fontSize: 10 }}>Clínica Geral | CRM 12345-SP</p>
-        </div>
-
-        {/* ── Video call area ── */}
-        <div style={{
-          margin: '0 10px',
-          borderRadius: 18,
-          overflow: 'hidden',
-          height: 224,
-          position: 'relative',
-          background: 'linear-gradient(160deg, #0d3460 0%, #0a2040 55%, #051428 100%)',
-        }}>
-          {/* Patient (main frame) — slightly off-center left */}
-          <div style={{
-            position: 'absolute', left: 28, top: 0, bottom: 0, display: 'flex', flexDirection: 'column',
-            alignItems: 'center', justifyContent: 'center', gap: 6,
-          }}>
-            <div style={{
-              width: 70, height: 70, borderRadius: '50%',
-              background: 'linear-gradient(135deg, #7C3AED 0%, #2563EB 100%)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              {/* Female silhouette */}
-              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.6">
-                <circle cx="12" cy="7" r="4" />
-                <path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" />
-              </svg>
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <p style={{ color: 'white', fontSize: 10, fontWeight: 500 }}>Ana Silva</p>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3, marginTop: 2 }}>
-                <span style={{ width: 5, height: 5, borderRadius: '50%', backgroundColor: '#34D399' }} />
-                <span style={{ color: '#34D399', fontSize: 9 }}>Conectada</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Doctor thumbnail (bottom-right) */}
-          <div style={{
-            position: 'absolute', bottom: 8, right: 8,
-            width: 62, height: 74,
-            borderRadius: 12, overflow: 'hidden',
-            border: `2px solid ${T}`,
-            background: 'linear-gradient(135deg, #164e63, #0e7490)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.6">
-              <circle cx="12" cy="7" r="4" />
-              <path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" />
-            </svg>
-          </div>
-        </div>
-
-        {/* ── Timer ── */}
-        <div style={{ textAlign: 'center', marginTop: 8 }}>
-          <span style={{ color: 'white', fontSize: 11, fontFamily: 'monospace' }}>24:10</span>
-        </div>
-
-        {/* ── Controls ── */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 10, marginTop: 10 }}>
-          {[
-            { d: 'M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z M19 10v2a7 7 0 0 1-14 0v-2', bg: '#1E293B' },
-            { d: 'M23 7l-7 5 7 5V7z M1 5h15a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H1a2 2 0 0 1-2-2', bg: '#1E293B' },
-            { d: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z', bg: '#1E293B' },
-            { d: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6', bg: '#1E293B' },
-            { d: 'M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.42 19.42 0 0 1 3.07 8.63 2 2 0 0 1 5 6.44h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 14.9', bg: '#EF4444' },
-          ].map((c, i) => (
-            <div key={i} style={{
-              width: 32, height: 32, borderRadius: '50%',
-              backgroundColor: c.bg,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d={c.d} />
-              </svg>
-            </div>
-          ))}
-        </div>
-
-      </div>
-    </div>
   )
 }
 
@@ -363,15 +182,17 @@ function HowItWorks() {
 /* ─── SPECIALTIES ─── */
 function Specialties() {
   const specs = [
-    { label: 'Clínica Geral', icon: <HeartbeatIcon /> },
-    { label: 'Pediatria', icon: <ChildIcon /> },
-    { label: 'Dermatologia', icon: <SkinIcon /> },
-    { label: 'Cardiologia', icon: <HeartIcon /> },
-    { label: 'Ginecologia', icon: <WomenIcon /> },
-    { label: 'Ortopedia', icon: <BoneIcon /> },
-    { label: 'Neurologia', icon: <BrainIcon /> },
-    { label: 'Psiquiatria', icon: <MindIcon /> },
-    { label: 'Endocrinologia', icon: <ChemIcon /> },
+    { label: 'Clínica Geral',        icon: <HeartbeatIcon /> },
+    { label: 'Pediatria',            icon: <ChildIcon /> },
+    { label: 'Dermatologia',         icon: <SkinIcon /> },
+    { label: 'Cardiologia',          icon: <HeartIcon /> },
+    { label: 'Ginecologia',          icon: <WomenIcon /> },
+    { label: 'Ortopedia',            icon: <BoneIcon /> },
+    { label: 'Neurologia',           icon: <BrainIcon /> },
+    { label: 'Psiquiatria',          icon: <MindIcon /> },
+    { label: 'Endocrinologia',       icon: <ChemIcon /> },
+    { label: 'Gastroenterologia',    icon: <GutIcon /> },
+    { label: 'Otorrinolaringologia', icon: <EarIcon /> },
   ]
 
   return (
@@ -381,7 +202,7 @@ function Specialties() {
           <h2 className="text-2xl font-bold" style={{ color: N }}>Especialidades disponíveis</h2>
           <a href="#" className="text-sm font-semibold hover:underline" style={{ color: T }}>Ver todas</a>
         </div>
-        <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-4">
+        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-4">
           {specs.map(s => (
             <div key={s.label}
               className="flex flex-col items-center gap-2 py-4 px-2 rounded-2xl cursor-pointer transition-all hover:shadow-md group"
@@ -550,7 +371,7 @@ function Faq() {
     { q: 'Posso enviar exames e laudos?', a: 'Sim. Você pode anexar PDFs e imagens antes ou durante a consulta. Nossa IA organiza as informações para o médico.' },
     { q: 'Como funciona o pagamento?', a: 'Aceitamos Pix e cartão de crédito. O pagamento é feito antes da consulta. Você recebe comprovante para o IRPF.' },
     { q: 'Posso solicitar receita médica?', a: 'Sim. O médico pode emitir receitas e encaminhamentos digitais com validade legal ao final da consulta.' },
-    { q: 'Quais especialidades estão disponíveis?', a: 'Clínica Geral, Pediatria, Dermatologia, Cardiologia, Ginecologia, Ortopedia, Neurologia, Psiquiatria, Endocrinologia, Gastroenterologia, Otorrinolaringologia e Oftalmologia.' },
+    { q: 'Quais especialidades estão disponíveis?', a: 'Clínica Geral, Pediatria, Dermatologia, Cardiologia, Ginecologia, Ortopedia, Neurologia, Psiquiatria, Endocrinologia, Gastroenterologia e Otorrinolaringologia.' },
     { q: 'Meus dados estão protegidos?', a: 'Sim. Seguimos rigorosamente a LGPD. Seus dados são criptografados e nunca compartilhados sem autorização.' },
   ]
 
@@ -694,5 +515,16 @@ const MindIcon = () => (
 const ChemIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     <path d="M9 3h6v9l4 7H5l4-7V3z" /><line x1="6" y1="9" x2="18" y2="9" />
+  </svg>
+)
+const GutIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 2C8 2 5 5 5 8c0 2 1 3.5 1 5 0 2-2 3-2 5a4 4 0 0 0 4 4c2 0 3-1 4-1s2 1 4 1a4 4 0 0 0 4-4c0-2-2-3-2-5 0-1.5 1-3 1-5 0-3-3-6-7-6z" />
+  </svg>
+)
+const EarIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M6 8a6 6 0 1 1 12 0c0 3-2 4-3 6-1 1.5-.5 3-2 4a2 2 0 0 1-3-1" />
+    <path d="M10 13a2 2 0 1 0 2-2" />
   </svg>
 )
