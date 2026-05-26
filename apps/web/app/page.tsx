@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 
 const T = '#17B890'   // teal primary
@@ -39,11 +40,7 @@ function Header() {
       <div className="mx-auto max-w-6xl flex items-center justify-between">
         {/* Logo */}
         <div className="flex items-center gap-2">
-          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-            <rect width="28" height="28" rx="8" fill={T} />
-            <path d="M14 8c-3 0-5 2.5-5 5 0 4 5 8 5 8s5-4 5-8c0-2.5-2-5-5-5z" fill="white" />
-            <circle cx="14" cy="13" r="2" fill={T} />
-          </svg>
+          <Image src="/logo.png" alt="Medicare" width={36} height={36} priority />
           <span className="text-lg font-bold" style={{ color: N }}>Medicare</span>
         </div>
 
@@ -464,10 +461,7 @@ function ForDoctors() {
             {/* Sidebar */}
             <div className="w-36 flex-shrink-0 py-4 px-3" style={{ backgroundColor: N, borderRight: '1px solid rgba(255,255,255,0.06)' }}>
               <div className="flex items-center gap-1.5 mb-5 px-1">
-                <svg width="14" height="14" viewBox="0 0 28 28" fill="none">
-                  <rect width="28" height="28" rx="6" fill={T} />
-                  <path d="M14 7c-2.5 0-4 2-4 4 0 3.5 4 7 4 7s4-3.5 4-7c0-2-1.5-4-4-4z" fill="white" />
-                </svg>
+                <Image src="/logo.png" alt="Medicare" width={22} height={22} />
                 <span className="text-white text-xs font-bold">Medicare</span>
               </div>
               <p className="text-xs mb-3 font-medium px-1" style={{ color: '#64748B' }}>Painel do médico</p>
@@ -599,10 +593,7 @@ function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
           <div className="col-span-2 md:col-span-1">
             <div className="flex items-center gap-2 mb-3">
-              <svg width="24" height="24" viewBox="0 0 28 28" fill="none">
-                <rect width="28" height="28" rx="8" fill={T} />
-                <path d="M14 8c-3 0-5 2.5-5 5 0 4 5 8 5 8s5-4 5-8c0-2.5-2-5-5-5z" fill="white" />
-              </svg>
+              <Image src="/logo.png" alt="Medicare" width={28} height={28} />
               <span className="text-white font-bold text-sm">Medicare</span>
             </div>
             <p className="text-xs leading-relaxed mb-4">Teleconsulta médica sob demanda. Conectando pacientes a médicos qualificados.</p>
