@@ -10,7 +10,6 @@
     "strictPropertyInitialization": false,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-    "exactOptionalPropertyTypes": false,
-    "outDir": "./dist"
+    "exactOptionalPropertyTypes": false
   }
 }
