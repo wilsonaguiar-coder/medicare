@@ -434,7 +434,7 @@ function Footer() {
               links: [
                 { label: 'Política de Privacidade', href: '/privacidade' },
                 { label: 'Termos de Uso',           href: '/termos' },
-                { label: 'Conformidade LGPD',       href: '/privacidade#lgpd' },
+                { label: 'Conformidade LGPD',       href: '/lgpd' },
               ],
             },
             {
