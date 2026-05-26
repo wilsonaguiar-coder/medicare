@@ -8,6 +8,9 @@
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "strictPropertyInitialization": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "exactOptionalPropertyTypes": false,
     "outDir": "./dist",
     "rootDir": "./src"
   }

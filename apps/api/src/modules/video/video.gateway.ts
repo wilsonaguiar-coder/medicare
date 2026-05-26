@@ -35,17 +35,17 @@ export class VideoGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('webrtc-offer')
-  handleOffer(@MessageBody() data: { roomId: string; offer: RTCSessionDescriptionInit; to: string }) {
+  handleOffer(@MessageBody() data: { roomId: string; offer: unknown; to: string }) {
     this.server.to(data.to).emit('webrtc-offer', data)
   }
 
   @SubscribeMessage('webrtc-answer')
-  handleAnswer(@MessageBody() data: { roomId: string; answer: RTCSessionDescriptionInit; to: string }) {
+  handleAnswer(@MessageBody() data: { roomId: string; answer: unknown; to: string }) {
     this.server.to(data.to).emit('webrtc-answer', data)
   }
 
   @SubscribeMessage('ice-candidate')
-  handleIceCandidate(@MessageBody() data: { candidate: RTCIceCandidate; to: string }) {
+  handleIceCandidate(@MessageBody() data: { candidate: unknown; to: string }) {
     this.server.to(data.to).emit('ice-candidate', data)
   }
 }
