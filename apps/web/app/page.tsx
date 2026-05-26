@@ -76,9 +76,10 @@ function Header() {
 function Hero() {
   return (
     <section className="px-6 py-16 lg:py-24 overflow-hidden" style={{ backgroundColor: '#F8FFFE' }}>
-      <div className="mx-auto max-w-6xl grid lg:grid-cols-2 gap-12 items-center">
-        {/* Left */}
-        <div>
+      <div className="mx-auto max-w-6xl flex flex-col lg:flex-row gap-10 lg:gap-8 items-center">
+
+        {/* Left — text */}
+        <div className="flex-1 min-w-0">
           <div className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold mb-6"
             style={{ backgroundColor: '#E6FAF6', color: T, border: `1px solid #A7F3E0` }}>
             <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: T }} />
@@ -123,22 +124,28 @@ function Hero() {
           </div>
         </div>
 
-        {/* Right — Phone + floating cards */}
-        <div className="relative hidden lg:flex justify-center items-center" style={{ minHeight: 560 }}>
-          {/* Phone */}
-          <PhoneMockup />
+        {/* Right — Phone + floating cards (fixed-width so it never bleeds left) */}
+        <div className="hidden lg:block flex-shrink-0 relative" style={{ width: 480, height: 580 }}>
 
-          {/* Floating: Documents */}
-          <div className="absolute right-0 top-12 rounded-2xl p-4 bg-white w-52"
-            style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.12)', border: '1px solid #F1F5F9' }}>
+          {/* Phone — left side of this column */}
+          <div style={{ position: 'absolute', left: 0, top: 24 }}>
+            <PhoneMockup />
+          </div>
+
+          {/* Floating: Documents card — right side */}
+          <div className="rounded-2xl p-4 bg-white"
+            style={{
+              position: 'absolute', right: 0, top: 16, width: 208,
+              boxShadow: '0 8px 32px rgba(0,0,0,0.12)', border: '1px solid #F1F5F9',
+            }}>
             <div className="flex items-center justify-between mb-3">
               <p className="text-xs font-semibold" style={{ color: N }}>Seus documentos</p>
-              <button className="text-slate-400 hover:text-slate-600 text-xs">✕</button>
+              <button className="text-slate-400 hover:text-slate-600 text-xs leading-none">✕</button>
             </div>
             {[
               { name: 'Exame de Sangue', size: 'PDF · 1.2 MB' },
-              { name: 'Raio-X Tórax', size: 'PDF · 890 KB' },
-              { name: 'Receita Médica', size: 'PDF · 450 KB' },
+              { name: 'Raio-X Tórax',    size: 'PDF · 890 KB' },
+              { name: 'Receita Médica',  size: 'PDF · 450 KB' },
             ].map(f => (
               <div key={f.name} className="flex items-center gap-2 mb-2">
                 <div className="h-7 w-7 rounded-lg flex items-center justify-center flex-shrink-0"
@@ -161,27 +168,31 @@ function Hero() {
             </button>
           </div>
 
-          {/* Floating: AI Summary */}
-          <div className="absolute right-0 bottom-16 rounded-2xl p-4 bg-white w-52"
-            style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.12)', border: '1px solid #F1F5F9' }}>
+          {/* Floating: AI Summary card — right side, lower */}
+          <div className="rounded-2xl p-4 bg-white"
+            style={{
+              position: 'absolute', right: 0, bottom: 32, width: 208,
+              boxShadow: '0 8px 32px rgba(0,0,0,0.12)', border: '1px solid #F1F5F9',
+            }}>
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-1.5">
-                <div className="h-5 w-5 rounded flex items-center justify-center"
+                <div className="h-5 w-5 rounded flex items-center justify-center flex-shrink-0"
                   style={{ background: `linear-gradient(135deg, #7C3AED, ${T})` }}>
                   <span className="text-white" style={{ fontSize: 9 }}>✦</span>
                 </div>
                 <p className="text-xs font-semibold" style={{ color: N }}>Resumo inteligente (IA)</p>
               </div>
-              <button className="text-slate-400 text-xs">✕</button>
+              <button className="text-slate-400 text-xs leading-none">✕</button>
             </div>
             <p className="text-xs leading-relaxed" style={{ color: '#64748B' }}>
-              Os exames apresentam resultados dentro da normalidade, sem alterações
-              significativas. Hemograma completo normal, sem sinais de infecção.
-              Glicemia e eletrólitos dentro dos parâmetros adequados.
+              Exames dentro da normalidade, sem alterações significativas.
+              Hemograma normal, sem sinais de infecção. Glicemia e eletrólitos
+              dentro dos parâmetros adequados.
             </p>
             <p className="text-xs mt-2" style={{ color: '#94A3B8' }}>✦ Gerado por IA · 1 min atrás</p>
           </div>
         </div>
+
       </div>
     </section>
   )
@@ -189,77 +200,123 @@ function Hero() {
 
 function PhoneMockup() {
   return (
-    <div className="relative" style={{ width: 250, height: 500, zIndex: 10 }}>
-      {/* Phone frame */}
-      <div className="absolute inset-0 rounded-[40px]" style={{ backgroundColor: '#0F172A', boxShadow: '0 30px 80px rgba(0,0,0,0.35), 0 0 0 2px #1E293B' }} />
-      {/* Notch */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 h-5 w-20 rounded-b-2xl" style={{ backgroundColor: '#0F172A', zIndex: 20 }} />
+    <div style={{ width: 248, height: 510, position: 'relative' }}>
+      {/* Phone chassis */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        borderRadius: 40,
+        backgroundColor: '#0F172A',
+        boxShadow: '0 32px 72px rgba(0,0,0,0.40), 0 0 0 2px #1E293B',
+      }} />
+      {/* Dynamic island / notch */}
+      <div style={{
+        position: 'absolute', top: 10, left: '50%', transform: 'translateX(-50%)',
+        width: 72, height: 20, borderRadius: 12,
+        backgroundColor: '#0F172A', zIndex: 20,
+      }} />
       {/* Screen */}
-      <div className="absolute inset-1.5 rounded-[34px] overflow-hidden" style={{ backgroundColor: '#0A1628' }}>
-        {/* Status bar */}
-        <div className="flex justify-between items-center px-4 pt-5 pb-2">
-          <span className="text-white text-xs">9:01</span>
-          <div className="flex gap-1">
-            {[3, 4, 5].map(h => (
-              <div key={h} className="w-1 rounded-sm bg-white" style={{ height: h }} />
+      <div style={{
+        position: 'absolute', inset: 6, borderRadius: 35,
+        backgroundColor: '#071020', overflow: 'hidden',
+      }}>
+
+        {/* ── Status bar ── */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '28px 14px 4px' }}>
+          <span style={{ color: 'white', fontSize: 11 }}>9:01</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            {/* Signal bars */}
+            {[3, 5, 7, 9].map(h => (
+              <div key={h} style={{ width: 3, height: h, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.8)' }} />
             ))}
-            <div className="w-4 h-2.5 rounded-sm ml-1" style={{ border: '1px solid white', position: 'relative' }}>
-              <div className="absolute inset-0.5 rounded-sm bg-white" style={{ width: '70%' }} />
+            {/* Battery */}
+            <div style={{ width: 18, height: 10, borderRadius: 3, border: '1px solid rgba(255,255,255,0.6)', marginLeft: 4, position: 'relative' }}>
+              <div style={{ position: 'absolute', inset: 2, borderRadius: 1.5, backgroundColor: 'white', width: '65%' }} />
             </div>
           </div>
         </div>
-        {/* Doctor info */}
-        <div className="text-center pb-2">
-          <p className="text-white text-xs font-semibold">Dr. Gabriel Nascimento</p>
-          <p className="text-xs" style={{ color: '#94A3B8' }}>Clínica Geral | CRM 12345-SP</p>
+
+        {/* ── Doctor name bar ── */}
+        <div style={{ textAlign: 'center', padding: '2px 0 6px' }}>
+          <p style={{ color: 'white', fontSize: 11, fontWeight: 600 }}>Dr. Gabriel Nascimento</p>
+          <p style={{ color: '#94A3B8', fontSize: 10 }}>Clínica Geral | CRM 12345-SP</p>
         </div>
-        {/* Video call — doctor */}
-        <div className="mx-3 rounded-2xl overflow-hidden" style={{ height: 200, background: 'linear-gradient(160deg, #1E3A5F 0%, #0F2D4A 60%, #0A1F36 100%)' }}>
-          <div className="h-full flex flex-col items-center justify-center gap-2">
-            {/* Doctor avatar */}
-            <div className="h-20 w-20 rounded-full flex items-center justify-center text-2xl font-bold text-white"
-              style={{ background: `linear-gradient(135deg, #1a6bb5, ${T})` }}>
-              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+
+        {/* ── Video call area ── */}
+        <div style={{
+          margin: '0 10px',
+          borderRadius: 18,
+          overflow: 'hidden',
+          height: 224,
+          position: 'relative',
+          background: 'linear-gradient(160deg, #0d3460 0%, #0a2040 55%, #051428 100%)',
+        }}>
+          {/* Patient (main frame) — slightly off-center left */}
+          <div style={{
+            position: 'absolute', left: 28, top: 0, bottom: 0, display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center', gap: 6,
+          }}>
+            <div style={{
+              width: 70, height: 70, borderRadius: '50%',
+              background: 'linear-gradient(135deg, #7C3AED 0%, #2563EB 100%)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              {/* Female silhouette */}
+              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.6">
                 <circle cx="12" cy="7" r="4" />
+                <path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" />
               </svg>
             </div>
-            <div className="text-center">
-              <p className="text-white text-xs font-medium">Dr. Gabriel</p>
-              <div className="flex items-center justify-center gap-1 mt-0.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                <span className="text-emerald-400 text-xs">Conectado</span>
+            <div style={{ textAlign: 'center' }}>
+              <p style={{ color: 'white', fontSize: 10, fontWeight: 500 }}>Ana Silva</p>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3, marginTop: 2 }}>
+                <span style={{ width: 5, height: 5, borderRadius: '50%', backgroundColor: '#34D399' }} />
+                <span style={{ color: '#34D399', fontSize: 9 }}>Conectada</span>
               </div>
             </div>
           </div>
-          {/* Patient thumbnail */}
-          <div className="absolute rounded-xl overflow-hidden flex items-center justify-center"
-            style={{ width: 60, height: 76, bottom: 212, right: 28, background: 'linear-gradient(135deg, #0F4C81, #1a6bb5)', border: `2px solid ${T}` }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+
+          {/* Doctor thumbnail (bottom-right) */}
+          <div style={{
+            position: 'absolute', bottom: 8, right: 8,
+            width: 62, height: 74,
+            borderRadius: 12, overflow: 'hidden',
+            border: `2px solid ${T}`,
+            background: 'linear-gradient(135deg, #164e63, #0e7490)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.6">
               <circle cx="12" cy="7" r="4" />
+              <path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" />
             </svg>
           </div>
         </div>
-        {/* Timer */}
-        <div className="text-center mt-2">
-          <span className="text-white text-xs font-mono">24:10</span>
+
+        {/* ── Timer ── */}
+        <div style={{ textAlign: 'center', marginTop: 8 }}>
+          <span style={{ color: 'white', fontSize: 11, fontFamily: 'monospace' }}>24:10</span>
         </div>
-        {/* Controls */}
-        <div className="flex justify-center gap-3 mt-3">
+
+        {/* ── Controls ── */}
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 10, marginTop: 10 }}>
           {[
-            { icon: '🎤', color: '#334155' },
-            { icon: '📹', color: '#334155' },
-            { icon: '💬', color: '#334155' },
-            { icon: '📋', color: '#334155' },
-            { icon: '📵', color: '#EF4444' },
+            { d: 'M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z M19 10v2a7 7 0 0 1-14 0v-2', bg: '#1E293B' },
+            { d: 'M23 7l-7 5 7 5V7z M1 5h15a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H1a2 2 0 0 1-2-2', bg: '#1E293B' },
+            { d: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z', bg: '#1E293B' },
+            { d: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6', bg: '#1E293B' },
+            { d: 'M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.42 19.42 0 0 1 3.07 8.63 2 2 0 0 1 5 6.44h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 14.9', bg: '#EF4444' },
           ].map((c, i) => (
-            <div key={i} className="h-8 w-8 rounded-full flex items-center justify-center text-xs"
-              style={{ backgroundColor: c.color }}>
-              {c.icon}
+            <div key={i} style={{
+              width: 32, height: 32, borderRadius: '50%',
+              backgroundColor: c.bg,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d={c.d} />
+              </svg>
             </div>
           ))}
         </div>
+
       </div>
     </div>
   )
