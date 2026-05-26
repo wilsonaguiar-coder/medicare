@@ -49,7 +49,7 @@ function Header() {
           <a href="#como-funciona" className="hover:text-slate-900 transition-colors">Como funciona</a>
           <a href="#especialidades" className="hover:text-slate-900 transition-colors">Especialidades</a>
           <a href="#medicos" className="hover:text-slate-900 transition-colors">Para médicos</a>
-          <a href="#" className="hover:text-slate-900 transition-colors">Sobre nós</a>
+          <a href="/sobre" className="hover:text-slate-900 transition-colors">Sobre nós</a>
           <a href="#faq" className="hover:text-slate-900 transition-colors">Dúvidas</a>
         </nav>
 
@@ -200,7 +200,7 @@ function Specialties() {
       <div className="mx-auto max-w-5xl">
         <div className="flex items-center justify-between mb-10">
           <h2 className="text-2xl font-bold" style={{ color: N }}>Especialidades disponíveis</h2>
-          <a href="#" className="text-sm font-semibold hover:underline" style={{ color: T }}>Ver todas</a>
+          <a href="#especialidades" className="text-sm font-semibold hover:underline" style={{ color: T }}>Ver todas</a>
         </div>
         <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-4">
           {specs.map(s => (
@@ -420,14 +420,40 @@ function Footer() {
             <p className="text-xs leading-relaxed mb-4">Teleconsulta médica sob demanda. Conectando pacientes a médicos qualificados.</p>
           </div>
           {[
-            { title: 'Plataforma', links: ['Como funciona', 'Especialidades', 'Para médicos'] },
-            { title: 'Legal', links: ['Política de Privacidade', 'Termos de Uso', 'LGPD'] },
-            { title: 'Suporte', links: ['Central de Ajuda', 'Contato', 'Área do Médico'] },
+            {
+              title: 'Plataforma',
+              links: [
+                { label: 'Como funciona',   href: '#como-funciona' },
+                { label: 'Especialidades',  href: '#especialidades' },
+                { label: 'Para médicos',    href: '#medicos' },
+                { label: 'Agendar consulta', href: '/consulta/nova' },
+              ],
+            },
+            {
+              title: 'Legal',
+              links: [
+                { label: 'Política de Privacidade', href: '/privacidade' },
+                { label: 'Termos de Uso',           href: '/termos' },
+                { label: 'Conformidade LGPD',       href: '/privacidade#lgpd' },
+              ],
+            },
+            {
+              title: 'Suporte',
+              links: [
+                { label: 'Perguntas frequentes', href: '#faq' },
+                { label: 'Contato',              href: 'mailto:contato@medicare.med.br' },
+                { label: 'Área do médico',       href: '/auth/login' },
+              ],
+            },
           ].map(col => (
             <div key={col.title}>
               <h4 className="text-white text-xs font-semibold mb-3">{col.title}</h4>
               <ul className="space-y-2">
-                {col.links.map(l => <li key={l}><a href="#" className="text-xs hover:text-white transition-colors">{l}</a></li>)}
+                {col.links.map(l => (
+                  <li key={l.label}>
+                    <a href={l.href} className="text-xs hover:text-white transition-colors">{l.label}</a>
+                  </li>
+                ))}
               </ul>
             </div>
           ))}
