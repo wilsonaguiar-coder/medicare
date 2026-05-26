@@ -1,0 +1,6 @@
+export * from './user'
+export * from './patient'
+export * from './doctor'
+export * from './consultation'
+export * from './document'
+export * from './payment'

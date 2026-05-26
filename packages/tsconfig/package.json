@@ -1,0 +1,11 @@
+{
+  "name": "@medicare/tsconfig",
+  "version": "0.0.1",
+  "private": true,
+  "exports": {
+    "./base": "./base.json",
+    "./nextjs": "./nextjs.json",
+    "./nestjs": "./nestjs.json",
+    "./react-native": "./react-native.json"
+  }
+}
