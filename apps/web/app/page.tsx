@@ -118,6 +118,7 @@ const SPECIALTIES = [
   { key: 'neurology', label: 'Neurologia', icon: '⚡' },
   { key: 'endocrinology', label: 'Endocrinologia', icon: '⚗️' },
   { key: 'gastroenterology', label: 'Gastroenterologia', icon: '🫁' },
+  { key: 'otolaryngology', label: 'Otorrinolaringologia', icon: '👂' },
 ]
 
 const STEPS = [
