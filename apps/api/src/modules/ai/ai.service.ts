@@ -77,9 +77,13 @@ export class AiService {
     this.openai = new OpenAI({ apiKey: config.get('OPENAI_API_KEY') })
   }
 
+  getModel() {
+    return this.config.get('OPENAI_MODEL', DEFAULT_OPENAI_MODEL)
+  }
+
   async summarizeDocument(text: string): Promise<string> {
     const response = await this.openai.chat.completions.create({
-      model: this.config.get('OPENAI_MODEL', DEFAULT_OPENAI_MODEL),
+      model: this.getModel(),
       response_format: documentSummaryFormat,
       messages: [
         {
@@ -112,7 +116,7 @@ export class AiService {
     extractedTexts?: string[]
   }): Promise<string> {
     const response = await this.openai.chat.completions.create({
-      model: this.config.get('OPENAI_MODEL', DEFAULT_OPENAI_MODEL),
+      model: this.getModel(),
       response_format: consultationPreparationFormat,
       messages: [
         {
@@ -142,7 +146,7 @@ export class AiService {
 
   async suggestAnamnesisTemplate(chiefComplaint: string, specialty: string): Promise<string> {
     const response = await this.openai.chat.completions.create({
-      model: this.config.get('OPENAI_MODEL', DEFAULT_OPENAI_MODEL),
+      model: this.getModel(),
       messages: [
         {
           role: 'system',
