@@ -18,7 +18,7 @@ export function VideoRoom({ token, serverUrl, onDisconnect }: VideoRoomProps) {
         video={true}
         audio={true}
         connect={true}
-        onDisconnected={onDisconnect}
+        onDisconnected={() => onDisconnect?.()}
         style={{ height: '100%' }}
       >
         <VideoConference />
