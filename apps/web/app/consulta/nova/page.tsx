@@ -9,6 +9,8 @@ type FlowStep = 'identification' | 'specialty' | 'triage' | 'documents'
 type UploadedDocument = { id: string; name: string; size: number; type: string }
 
 const MIN_SYMPTOMS_LENGTH = 50
+const MAX_DOCUMENT_SIZE_BYTES = 5 * 1024 * 1024
+const ALLOWED_DOCUMENT_TYPES = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png']
 
 const DOCUMENT_TYPES = [
   { value: 'LAB_RESULT', label: 'Exame laboratorial' },
@@ -63,6 +65,7 @@ export default function NovaConsultaPage() {
   const [isPregnant, setIsPregnant] = useState(false)
   const [documentType, setDocumentType] = useState(DOCUMENT_TYPES[0].value)
   const [documents, setDocuments] = useState<UploadedDocument[]>([])
+  const [documentError, setDocumentError] = useState('')
 
   const selected = SPECIALTIES.find((specialty) => specialty.key === selectedSpecialty) ?? SPECIALTIES[0]
   const symptomsLength = symptoms.trim().length
@@ -77,13 +80,27 @@ export default function NovaConsultaPage() {
   function handleDocuments(files: FileList | null) {
     if (!files) return
 
-    const nextDocuments = Array.from(files).map((file) => ({
+    const selectedFiles = Array.from(files)
+    const invalidType = selectedFiles.find((file) => !ALLOWED_DOCUMENT_TYPES.includes(file.type))
+    if (invalidType) {
+      setDocumentError(`${invalidType.name} não é aceito. Envie apenas PDF, JPG ou PNG.`)
+      return
+    }
+
+    const oversized = selectedFiles.find((file) => file.size > MAX_DOCUMENT_SIZE_BYTES)
+    if (oversized) {
+      setDocumentError(`${oversized.name} tem ${formatBytes(oversized.size)}. O limite é 5 MB por arquivo.`)
+      return
+    }
+
+    const nextDocuments = selectedFiles.map((file) => ({
       id: `${file.name}-${file.size}-${Date.now()}-${Math.random()}`,
       name: file.name,
       size: file.size,
       type: documentType,
     }))
 
+    setDocumentError('')
     setDocuments((current) => [...current, ...nextDocuments])
   }
 
@@ -112,7 +129,7 @@ export default function NovaConsultaPage() {
               {activeStep === 'identification' && 'Para proteger seus dados de saúde e manter seu histórico de atendimento, a consulta começa com login ou cadastro do paciente.'}
               {activeStep === 'specialty' && 'Agora selecione o tipo de atendimento desejado para continuar o agendamento.'}
               {activeStep === 'triage' && 'Essas informações ajudam o médico a se preparar antes da consulta.'}
-              {activeStep === 'documents' && 'Anexe laudos, exames, receitas ou imagens que possam ajudar o médico. Esta etapa é opcional.'}
+              {activeStep === 'documents' && 'Os arquivos serão usados apenas para extração temporária de texto e análise da IA. O documento original não será salvo.'}
             </p>
           </div>
 
@@ -354,9 +371,19 @@ export default function NovaConsultaPage() {
                 <p className="text-xs font-semibold" style={{ color: T }}>{selected.label}</p>
                 <h2 className="mt-2 text-xl font-bold" style={{ color: N }}>Documentos</h2>
                 <p className="mt-1 text-sm" style={{ color: '#64748B' }}>
-                  Se tiver exames, receitas, fotos ou laudos relacionados, você poderá anexá-los aqui antes do pagamento.
+                  Os arquivos serão usados apenas para extrair texto e gerar uma análise de apoio. O documento original não será salvo.
                 </p>
               </div>
+
+              <div className="mb-5 rounded-2xl p-4 text-sm leading-relaxed" style={{ backgroundColor: '#F0FDF9', color: '#475569', border: `1px solid ${T}30` }}>
+                <strong style={{ color: N }}>Privacidade:</strong> depois da extração, somente o texto extraído e o resumo gerado pela IA ficarão no histórico do paciente. O arquivo original será descartado.
+              </div>
+
+              {documentError && (
+                <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  {documentError}
+                </div>
+              )}
 
               <div className="grid gap-5 lg:grid-cols-[280px_1fr]">
                 <div className="rounded-2xl p-5" style={{ border: '1px solid #DDE7EE', backgroundColor: '#F8FAFC' }}>
@@ -368,8 +395,8 @@ export default function NovaConsultaPage() {
                     </select>
                   </Field>
 
-                  <div className="mt-4 rounded-xl p-4 text-xs leading-relaxed" style={{ backgroundColor: '#F0FDF9', color: '#475569', border: `1px solid ${T}30` }}>
-                    PDFs e imagens enviados aqui poderão ser processados por OCR e resumidos pela IA para apoiar o médico antes da consulta.
+                  <div className="mt-4 rounded-xl p-4 text-xs leading-relaxed" style={{ backgroundColor: 'white', color: '#64748B', border: '1px solid #DDE7EE' }}>
+                    Limite de 5 MB por arquivo. Arquivos maiores serão recusados antes do envio.
                   </div>
                 </div>
 
@@ -381,26 +408,29 @@ export default function NovaConsultaPage() {
                     <UploadIcon />
                   </span>
                   <span className="text-sm font-semibold" style={{ color: N }}>Selecionar arquivos</span>
-                  <span className="mt-1 text-xs" style={{ color: '#64748B' }}>PDF, JPG ou PNG até 10 MB por arquivo</span>
+                  <span className="mt-1 text-xs" style={{ color: '#64748B' }}>PDF, JPG ou PNG até 5 MB por arquivo</span>
                   <input
                     type="file"
                     multiple
                     accept="application/pdf,image/jpeg,image/jpg,image/png"
                     className="hidden"
-                    onChange={(event) => handleDocuments(event.target.files)}
+                    onChange={(event) => {
+                      handleDocuments(event.target.files)
+                      event.currentTarget.value = ''
+                    }}
                   />
                 </label>
               </div>
 
               {documents.length > 0 && (
                 <div className="mt-6 space-y-3">
-                  <p className="text-sm font-semibold" style={{ color: N }}>Arquivos selecionados</p>
+                  <p className="text-sm font-semibold" style={{ color: N }}>Arquivos selecionados para extração</p>
                   {documents.map((document) => (
                     <div key={document.id} className="flex items-center justify-between gap-4 rounded-xl p-4" style={{ border: '1px solid #DDE7EE', backgroundColor: 'white' }}>
                       <div className="min-w-0">
                         <p className="truncate text-sm font-semibold" style={{ color: N }}>{document.name}</p>
                         <p className="mt-0.5 text-xs" style={{ color: '#64748B' }}>
-                          {documentTypeLabel(document.type)} · {formatBytes(document.size)} · aguardando envio
+                          {documentTypeLabel(document.type)} · {formatBytes(document.size)} · arquivo não será armazenado
                         </p>
                       </div>
                       <button type="button" onClick={() => removeDocument(document.id)} className="text-xs font-semibold hover:underline" style={{ color: '#BE123C' }}>
