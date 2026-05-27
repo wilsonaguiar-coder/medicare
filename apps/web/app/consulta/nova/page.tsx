@@ -16,6 +16,7 @@ type UploadedDocument = {
   aiSummary: string
 }
 type AiStatus = 'idle' | 'loading' | 'ready' | 'error'
+type AiResult = { specialty: string; label: string; reason: string }
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '/api/v1'
 const MIN_SYMPTOMS_LENGTH = 50
@@ -31,17 +32,17 @@ const DOCUMENT_TYPES = [
 ]
 
 const SPECIALTIES: { key: string; label: string; icon: string; price: number }[] = [
-  { key: 'CLINICAL_MEDICINE', label: 'Clinica Medica', icon: '/clm.png', price: 120 },
-  { key: 'PEDIATRICS', label: 'Pediatria', icon: '/ped.png', price: 130 },
-  { key: 'DERMATOLOGY', label: 'Dermatologia', icon: '/der.png', price: 140 },
-  { key: 'GYNECOLOGY', label: 'Ginecologia', icon: '/gin.png', price: 140 },
-  { key: 'ORTHOPEDICS', label: 'Ortopedia', icon: '/ort.png', price: 150 },
-  { key: 'PSYCHIATRY', label: 'Psiquiatria', icon: '/psi.png', price: 160 },
-  { key: 'NEUROLOGY', label: 'Neurologia', icon: '/neu.png', price: 160 },
-  { key: 'CARDIOLOGY', label: 'Cardiologia', icon: '/car.png', price: 160 },
-  { key: 'ENDOCRINOLOGY', label: 'Endocrinologia', icon: '/end.png', price: 150 },
-  { key: 'GASTROENTEROLOGY', label: 'Gastroenterologia', icon: '/gas.png', price: 150 },
-  { key: 'OTORHINOLARYNGOLOGY', label: 'Otorrinolaringologia', icon: '/oto.png', price: 150 },
+  { key: 'CLINICAL_MEDICINE',    label: 'Clinica Medica',       icon: '/clm.png', price: 120 },
+  { key: 'PEDIATRICS',           label: 'Pediatria',             icon: '/ped.png', price: 130 },
+  { key: 'DERMATOLOGY',          label: 'Dermatologia',          icon: '/der.png', price: 140 },
+  { key: 'GYNECOLOGY',           label: 'Ginecologia',           icon: '/gin.png', price: 140 },
+  { key: 'ORTHOPEDICS',          label: 'Ortopedia',             icon: '/ort.png', price: 150 },
+  { key: 'PSYCHIATRY',           label: 'Psiquiatria',           icon: '/psi.png', price: 160 },
+  { key: 'NEUROLOGY',            label: 'Neurologia',            icon: '/neu.png', price: 160 },
+  { key: 'CARDIOLOGY',           label: 'Cardiologia',           icon: '/car.png', price: 160 },
+  { key: 'ENDOCRINOLOGY',        label: 'Endocrinologia',        icon: '/end.png', price: 150 },
+  { key: 'GASTROENTEROLOGY',     label: 'Gastroenterologia',     icon: '/gas.png', price: 150 },
+  { key: 'OTORHINOLARYNGOLOGY',  label: 'Otorrinolaringologia',  icon: '/oto.png', price: 150 },
 ]
 
 const T = '#17B890'
@@ -82,8 +83,16 @@ export default function NovaConsultaPage() {
   const [summaryStatus, setSummaryStatus] = useState<AiStatus>('idle')
   const [summaryError, setSummaryError] = useState('')
 
-  const selected = SPECIALTIES.find((specialty) => specialty.key === selectedSpecialty) ?? SPECIALTIES[0]
+  // AI specialty suggestion
+  const [showAiPanel, setShowAiPanel] = useState(false)
+  const [aiSymptoms, setAiSymptoms] = useState('')
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiResult, setAiResult] = useState<AiResult | null>(null)
+  const [aiError, setAiError] = useState<string | null>(null)
+
+  const selected = SPECIALTIES.find((s) => s.key === selectedSpecialty) ?? SPECIALTIES[0]
   const symptomsLength = symptoms.trim().length
+
   const canCreateAccount =
     patientName.trim().length > 2 &&
     email.includes('@') &&
@@ -91,18 +100,35 @@ export default function NovaConsultaPage() {
     password.length >= 6 &&
     acceptedTerms
   const canContinueTriage = symptomsLength >= MIN_SYMPTOMS_LENGTH
-  const triageFlags = {
-    hasFever,
-    hasPain,
-    hasShortnessOfBreath,
-    hasAllergy,
-    usesMedication,
-    isPregnant,
+  const triageFlags = { hasFever, hasPain, hasShortnessOfBreath, hasAllergy, usesMedication, isPregnant }
+
+  async function handleAiSuggest() {
+    if (aiSymptoms.trim().length < 10 || aiLoading) return
+    setAiLoading(true)
+    setAiResult(null)
+    setAiError(null)
+    try {
+      const res = await fetch('/api/suggest-specialty', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ symptoms: aiSymptoms }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setAiError(data.error ?? 'Erro ao consultar IA.')
+      } else {
+        setAiResult(data)
+        setSelectedSpecialty(data.specialty)
+      }
+    } catch {
+      setAiError('Nao foi possivel conectar ao servico de IA. Tente novamente.')
+    } finally {
+      setAiLoading(false)
+    }
   }
 
   function handleDocumentSelection(files: FileList | null) {
     if (!files) return
-
     const selectedFiles = Array.from(files)
     const invalidType = selectedFiles.find((file) => !ALLOWED_DOCUMENT_TYPES.includes(file.type))
     if (invalidType) {
@@ -110,14 +136,12 @@ export default function NovaConsultaPage() {
       setPendingDocuments([])
       return
     }
-
     const oversized = selectedFiles.find((file) => file.size > MAX_DOCUMENT_SIZE_BYTES)
     if (oversized) {
       setDocumentError(`${oversized.name} tem ${formatBytes(oversized.size)}. O limite e 5 MB por arquivo.`)
       setPendingDocuments([])
       return
     }
-
     setDocumentError('')
     setPendingDocuments(
       selectedFiles.map((file) => ({
@@ -134,38 +158,19 @@ export default function NovaConsultaPage() {
       setDocumentError('Selecione pelo menos um arquivo antes de anexar.')
       return
     }
-
     setDocumentProcessing(true)
     setDocumentError('')
-
     try {
       const processedDocuments: UploadedDocument[] = []
-
       for (const document of pendingDocuments) {
         const formData = new FormData()
         formData.append('file', document.file)
         formData.append('type', documentType)
-
-        const response = await fetch(`${API_BASE}/documents/test/extract`, {
-          method: 'POST',
-          body: formData,
-        })
-
-        if (!response.ok) {
-          throw new Error(await getApiError(response))
-        }
-
+        const response = await fetch(`${API_BASE}/documents/test/extract`, { method: 'POST', body: formData })
+        if (!response.ok) throw new Error(await getApiError(response))
         const result = await response.json() as { extractedText: string; aiSummary: string }
-        processedDocuments.push({
-          id: document.id,
-          name: document.name,
-          size: document.size,
-          type: documentType,
-          extractedText: result.extractedText,
-          aiSummary: result.aiSummary,
-        })
+        processedDocuments.push({ id: document.id, name: document.name, size: document.size, type: documentType, extractedText: result.extractedText, aiSummary: result.aiSummary })
       }
-
       setDocuments((current) => [...current, ...processedDocuments])
       setPendingDocuments([])
     } catch (error) {
@@ -179,7 +184,6 @@ export default function NovaConsultaPage() {
     setActiveStep('consultation')
     setSummaryStatus('loading')
     setSummaryError('')
-
     try {
       const response = await fetch(`${API_BASE}/documents/test/prepare-consultation`, {
         method: 'POST',
@@ -189,15 +193,11 @@ export default function NovaConsultaPage() {
           symptoms,
           symptomDuration: duration,
           flags: triageFlags,
-          documentSummaries: documents.map((document) => document.aiSummary),
-          extractedTexts: documents.map((document) => document.extractedText),
+          documentSummaries: documents.map((d) => d.aiSummary),
+          extractedTexts: documents.map((d) => d.extractedText),
         }),
       })
-
-      if (!response.ok) {
-        throw new Error(await getApiError(response))
-      }
-
+      if (!response.ok) throw new Error(await getApiError(response))
       const result = await response.json() as { summary: string }
       setConsultationSummary(result.summary)
       setSummaryStatus('ready')
@@ -208,7 +208,7 @@ export default function NovaConsultaPage() {
   }
 
   function removeDocument(id: string) {
-    setDocuments((current) => current.filter((document) => document.id !== id))
+    setDocuments((current) => current.filter((d) => d.id !== id))
   }
 
   return (
@@ -246,35 +246,29 @@ export default function NovaConsultaPage() {
 
           <Progress activeStep={activeStep} />
 
+          {/* ── IDENTIFICAÇÃO ── */}
           {activeStep === 'identification' && (
             <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
               <section className="rounded-2xl bg-white p-6 shadow-sm" style={{ border: '1px solid #E2E8F0' }}>
                 <div className="mb-5 inline-flex rounded-xl bg-slate-100 p-1">
-                  <button type="button" onClick={() => setMode('register')} className="rounded-lg px-4 py-2 text-sm font-semibold transition-all" style={{ backgroundColor: mode === 'register' ? 'white' : 'transparent', color: mode === 'register' ? N : '#64748B' }}>
-                    Criar cadastro
-                  </button>
-                  <button type="button" onClick={() => setMode('login')} className="rounded-lg px-4 py-2 text-sm font-semibold transition-all" style={{ backgroundColor: mode === 'login' ? 'white' : 'transparent', color: mode === 'login' ? N : '#64748B' }}>
-                    Ja tenho conta
-                  </button>
+                  <button type="button" onClick={() => setMode('register')} className="rounded-lg px-4 py-2 text-sm font-semibold transition-all" style={{ backgroundColor: mode === 'register' ? 'white' : 'transparent', color: mode === 'register' ? N : '#64748B' }}>Criar cadastro</button>
+                  <button type="button" onClick={() => setMode('login')} className="rounded-lg px-4 py-2 text-sm font-semibold transition-all" style={{ backgroundColor: mode === 'login' ? 'white' : 'transparent', color: mode === 'login' ? N : '#64748B' }}>Ja tenho conta</button>
                 </div>
-
                 {mode === 'register' ? (
                   <div>
                     <h2 className="text-xl font-bold" style={{ color: N }}>Cadastro rapido do paciente</h2>
                     <p className="mt-1 text-sm" style={{ color: '#64748B' }}>Voce usara estes dados para acessar documentos, historico e proximas consultas.</p>
                     <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                      <Field label="Nome completo"><input value={patientName} onChange={(event) => setPatientName(event.target.value)} className="input-field" placeholder="Maria Silva" /></Field>
-                      <Field label="Celular"><input value={phone} onChange={(event) => setPhone(event.target.value)} className="input-field" placeholder="(11) 99999-9999" /></Field>
-                      <Field label="E-mail"><input value={email} onChange={(event) => setEmail(event.target.value)} className="input-field" type="email" placeholder="voce@email.com" /></Field>
-                      <Field label="Senha"><input value={password} onChange={(event) => setPassword(event.target.value)} className="input-field" type="password" placeholder="Minimo 6 caracteres" /></Field>
+                      <Field label="Nome completo"><input value={patientName} onChange={(e) => setPatientName(e.target.value)} className="input-field" placeholder="Maria Silva" /></Field>
+                      <Field label="Celular"><input value={phone} onChange={(e) => setPhone(e.target.value)} className="input-field" placeholder="(11) 99999-9999" /></Field>
+                      <Field label="E-mail"><input value={email} onChange={(e) => setEmail(e.target.value)} className="input-field" type="email" placeholder="voce@email.com" /></Field>
+                      <Field label="Senha"><input value={password} onChange={(e) => setPassword(e.target.value)} className="input-field" type="password" placeholder="Minimo 6 caracteres" /></Field>
                     </div>
                     <label className="mt-5 flex items-start gap-3 rounded-xl p-4 text-sm" style={{ border: '1px solid #E2E8F0', color: '#475569' }}>
-                      <input type="checkbox" checked={acceptedTerms} onChange={(event) => setAcceptedTerms(event.target.checked)} className="mt-0.5 h-4 w-4 accent-[#17B890]" />
+                      <input type="checkbox" checked={acceptedTerms} onChange={(e) => setAcceptedTerms(e.target.checked)} className="mt-0.5 h-4 w-4 accent-[#17B890]" />
                       <span>Li e aceito os termos de uso, a politica de privacidade e entendo que a Medicare nao realiza atendimentos de emergencia.</span>
                     </label>
-                    <button type="button" disabled={!canCreateAccount} onClick={() => setActiveStep('specialty')} className="mt-5 rounded-xl px-6 py-3 text-sm font-semibold text-white transition-all disabled:cursor-not-allowed disabled:opacity-50" style={{ backgroundColor: T, boxShadow: `0 4px 16px ${T}35` }}>
-                      Criar conta e continuar
-                    </button>
+                    <button type="button" disabled={!canCreateAccount} onClick={() => setActiveStep('specialty')} className="mt-5 rounded-xl px-6 py-3 text-sm font-semibold text-white transition-all disabled:cursor-not-allowed disabled:opacity-50" style={{ backgroundColor: T, boxShadow: `0 4px 16px ${T}35` }}>Criar conta e continuar</button>
                   </div>
                 ) : (
                   <div>
@@ -285,15 +279,12 @@ export default function NovaConsultaPage() {
                       <Field label="Senha"><input className="input-field" type="password" placeholder="Sua senha" /></Field>
                     </div>
                     <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
-                      <button type="button" onClick={() => setActiveStep('specialty')} className="rounded-xl px-6 py-3 text-sm font-semibold text-white transition-all hover:opacity-90" style={{ backgroundColor: T, boxShadow: `0 4px 16px ${T}35` }}>
-                        Entrar e continuar
-                      </button>
+                      <button type="button" onClick={() => setActiveStep('specialty')} className="rounded-xl px-6 py-3 text-sm font-semibold text-white transition-all hover:opacity-90" style={{ backgroundColor: T, boxShadow: `0 4px 16px ${T}35` }}>Entrar e continuar</button>
                       <Link href="/auth/login" className="text-sm font-semibold hover:underline" style={{ color: T }}>Entrar pela pagina completa</Link>
                     </div>
                   </div>
                 )}
               </section>
-
               <aside className="rounded-2xl bg-white p-6 shadow-sm" style={{ border: '1px solid #E2E8F0' }}>
                 <h2 className="text-lg font-bold" style={{ color: N }}>Por que criar conta?</h2>
                 <div className="mt-5 space-y-4 text-sm leading-relaxed" style={{ color: '#64748B' }}>
@@ -305,43 +296,135 @@ export default function NovaConsultaPage() {
             </div>
           )}
 
+          {/* ── ESPECIALIDADE ── */}
           {activeStep === 'specialty' && (
-            <section className="mt-8">
-              <div className="mb-5"><h2 className="text-xl font-bold" style={{ color: N }}>Especialidades disponiveis</h2><p className="mt-1 text-sm" style={{ color: '#64748B' }}>Selecione uma opcao para seguir para a pre-triagem.</p></div>
+            <section className="mt-8 space-y-3">
+              <div className="mb-5">
+                <h2 className="text-xl font-bold" style={{ color: N }}>Especialidades disponiveis</h2>
+                <p className="mt-1 text-sm" style={{ color: '#64748B' }}>Selecione uma opcao para seguir para a pre-triagem.</p>
+              </div>
+
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {SPECIALTIES.map((specialty) => {
                   const isSelected = specialty.key === selectedSpecialty
+                  const isAiSuggested = aiResult?.specialty === specialty.key
                   return (
-                    <button key={specialty.key} type="button" onClick={() => setSelectedSpecialty(specialty.key)} className="flex items-center gap-3 rounded-xl border bg-white p-4 text-left transition-all hover:shadow-sm focus:outline-none" style={{ borderColor: isSelected ? T : '#E2E8F0', backgroundColor: isSelected ? '#F0FDF9' : 'white' }}>
+                    <button key={specialty.key} type="button" onClick={() => { setSelectedSpecialty(specialty.key); setShowAiPanel(false) }}
+                      className="flex items-center gap-3 rounded-xl border bg-white p-4 text-left transition-all hover:shadow-sm focus:outline-none"
+                      style={{ borderColor: isSelected ? T : '#E2E8F0', backgroundColor: isSelected ? '#F0FDF9' : 'white' }}>
                       <Image src={specialty.icon} alt={specialty.label} width={40} height={40} className="flex-shrink-0" />
-                      <div className="min-w-0 flex-1"><p className="text-sm font-semibold" style={{ color: N }}>{specialty.label}</p><p className="text-xs" style={{ color: '#64748B' }}>R$ {specialty.price},00 - 30 min</p></div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-sm font-semibold" style={{ color: N }}>{specialty.label}</p>
+                          {isAiSuggested && !isSelected && (
+                            <span className="rounded-full px-1.5 py-0.5 text-[10px] font-semibold" style={{ backgroundColor: '#E6FAF6', color: T }}>IA</span>
+                          )}
+                        </div>
+                        <p className="text-xs" style={{ color: '#64748B' }}>R$ {specialty.price},00 - 30 min</p>
+                      </div>
                       {isSelected && <span style={{ color: T }}>✓</span>}
                     </button>
                   )
                 })}
               </div>
-              <button type="button" className="mt-4 flex w-full items-center gap-4 rounded-xl border-2 p-4 text-left transition-all hover:opacity-90 focus:outline-none" style={{ borderColor: T, backgroundColor: '#F0FDF9' }}>
-                <span className="text-3xl">?</span><div className="flex-1"><p className="text-sm font-semibold" style={{ color: N }}>Nao sei qual especialidade escolher</p><p className="mt-0.5 text-xs" style={{ color: '#475569' }}>Descreva seus sintomas e nossa IA ira indicar a especialidade mais adequada para voce.</p></div><span className="text-sm font-semibold" style={{ color: T }}>Em breve</span>
-              </button>
+
+              {/* Painel IA */}
+              <div className="rounded-xl overflow-hidden transition-all" style={{ border: `2px solid ${showAiPanel ? T : '#E2E8F0'}` }}>
+                <button type="button"
+                  onClick={() => { setShowAiPanel(!showAiPanel); if (showAiPanel) { setAiResult(null); setAiError(null) } }}
+                  className="w-full flex items-center gap-4 p-4 text-left"
+                  style={{ backgroundColor: showAiPanel ? '#F0FDF9' : 'white' }}>
+                  <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-xl" style={{ backgroundColor: '#F0FDF9' }}>🤔</span>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold" style={{ color: N }}>Nao sei qual especialidade escolher</p>
+                    <p className="text-xs mt-0.5" style={{ color: '#475569' }}>Descreva seus sintomas e nossa IA indicara a especialidade mais adequada.</p>
+                  </div>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round"
+                    className="flex-shrink-0 transition-transform duration-200"
+                    style={{ transform: showAiPanel ? 'rotate(180deg)' : 'none' }}>
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </button>
+
+                {showAiPanel && (
+                  <div className="px-4 pb-5 pt-2" style={{ borderTop: `1px solid ${T}30`, backgroundColor: '#FAFFFE' }}>
+                    <p className="mb-3 text-xs" style={{ color: '#64748B' }}>
+                      Descreva o que voce esta sentindo. Nao inclua nome ou dados pessoais — apenas os sintomas.
+                    </p>
+                    <textarea
+                      value={aiSymptoms}
+                      onChange={(e) => setAiSymptoms(e.target.value.slice(0, 500))}
+                      placeholder="Ex: Dor de cabeca frequente, tontura ao levantar, sensacao de pressao atras dos olhos ha 3 dias..."
+                      rows={3}
+                      className="w-full rounded-xl border px-3 py-2.5 text-sm text-gray-900 resize-none outline-none transition-all"
+                      style={{
+                        borderColor: aiSymptoms.length > 0 ? T : '#E2E8F0',
+                        boxShadow: aiSymptoms.length > 0 ? `0 0 0 3px ${T}15` : 'none',
+                        backgroundColor: 'white',
+                      }}
+                    />
+                    <div className="mt-2 flex items-center justify-between gap-3">
+                      <span className="text-xs" style={{ color: '#94A3B8' }}>{aiSymptoms.length}/500</span>
+                      <button type="button" onClick={handleAiSuggest}
+                        disabled={aiSymptoms.trim().length < 10 || aiLoading}
+                        className="flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        style={{ backgroundColor: T }}>
+                        {aiLoading ? <><SpinnerIcon /> Analisando...</> : <>✨ Identificar especialidade</>}
+                      </button>
+                    </div>
+
+                    {aiError && (
+                      <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">{aiError}</div>
+                    )}
+
+                    {aiResult && (
+                      <div className="mt-4 rounded-xl p-4" style={{ backgroundColor: '#F0FDF9', border: `1px solid ${T}50` }}>
+                        <div className="flex items-start gap-3">
+                          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: T }}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: T }}>Especialidade indicada pela IA</p>
+                            <p className="mt-0.5 text-base font-bold" style={{ color: N }}>{aiResult.label}</p>
+                            <p className="mt-1 text-xs leading-relaxed" style={{ color: '#475569' }}>{aiResult.reason}</p>
+                            <p className="mt-2 text-xs italic" style={{ color: '#94A3B8' }}>Esta e uma sugestao de triagem, nao um diagnostico medico.</p>
+                          </div>
+                        </div>
+                        <button type="button"
+                          onClick={() => { setSelectedSpecialty(aiResult.specialty); setShowAiPanel(false) }}
+                          className="mt-3 w-full rounded-lg py-2.5 text-xs font-semibold text-white transition-all hover:opacity-90"
+                          style={{ backgroundColor: T }}>
+                          Confirmar — {aiResult.label}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
               <StepActions backLabel="Voltar" nextLabel="Continuar para pre-triagem" onBack={() => setActiveStep('identification')} onNext={() => setActiveStep('triage')} />
             </section>
           )}
 
+          {/* ── TRIAGEM ── */}
           {activeStep === 'triage' && (
             <section className="mt-8 rounded-2xl bg-white p-6 shadow-sm" style={{ border: '1px solid #E2E8F0' }}>
               <div className="mb-6"><p className="text-xs font-semibold" style={{ color: T }}>{selected.label}</p><h2 className="mt-2 text-xl font-bold" style={{ color: N }}>Pre-triagem</h2><p className="mt-1 text-sm" style={{ color: '#64748B' }}>Responda algumas perguntas rapidas para orientar o atendimento medico.</p></div>
               <div className="grid gap-5">
                 <Field label="Descreva seus sintomas principais">
-                  <textarea value={symptoms} onChange={(event) => setSymptoms(event.target.value)} className="input-field min-h-[130px] resize-none" placeholder="Ex.: dor de garganta, febre baixa e tosse ha dois dias, quando piora, se tomou algum remedio e se houve contato com pessoas doentes..." />
+                  <textarea value={symptoms} onChange={(e) => setSymptoms(e.target.value)} className="input-field min-h-[130px] resize-none" placeholder="Ex.: dor de garganta, febre baixa e tosse ha dois dias, quando piora, se tomou algum remedio e se houve contato com pessoas doentes..." />
                   <p className="mt-1 text-xs" style={{ color: canContinueTriage ? T : '#94A3B8' }}>{symptomsLength}/{MIN_SYMPTOMS_LENGTH} caracteres minimos obrigatorios.</p>
                 </Field>
-                <Field label="Quando comecou?"><select value={duration} onChange={(event) => setDuration(event.target.value)} className="input-field"><option>Hoje</option><option>2 a 3 dias</option><option>4 a 7 dias</option><option>Mais de uma semana</option></select></Field>
+                <Field label="Quando comecou?"><select value={duration} onChange={(e) => setDuration(e.target.value)} className="input-field"><option>Hoje</option><option>2 a 3 dias</option><option>4 a 7 dias</option><option>Mais de uma semana</option></select></Field>
                 <div><p className="mb-3 text-sm font-semibold" style={{ color: N }}>Alguma destas situacoes se aplica?</p><div className="grid gap-3 sm:grid-cols-2"><Toggle checked={hasFever} label="Tem febre?" onChange={setHasFever} /><Toggle checked={hasPain} label="Tem dor?" onChange={setHasPain} /><Toggle checked={hasShortnessOfBreath} label="Tem falta de ar?" onChange={setHasShortnessOfBreath} /><Toggle checked={hasAllergy} label="Tem alergias?" onChange={setHasAllergy} /><Toggle checked={usesMedication} label="Usa medicamento continuo?" onChange={setUsesMedication} /><Toggle checked={isPregnant} label="Esta gravida ou ha suspeita?" onChange={setIsPregnant} /></div></div>
               </div>
               <StepActions backLabel="Voltar para especialidade" nextLabel="Continuar para documentos" onBack={() => setActiveStep('specialty')} onNext={() => setActiveStep('documents')} nextDisabled={!canContinueTriage} />
             </section>
           )}
 
+          {/* ── DOCUMENTOS ── */}
           {activeStep === 'documents' && (
             <section className="mt-8 rounded-2xl bg-white p-6 shadow-sm" style={{ border: '1px solid #E2E8F0' }}>
               <div className="mb-6"><p className="text-xs font-semibold" style={{ color: T }}>{selected.label}</p><h2 className="mt-2 text-xl font-bold" style={{ color: N }}>Documentos</h2><p className="mt-1 text-sm" style={{ color: '#64748B' }}>Nenhum documento original sera salvo no servidor. O arquivo sera lido temporariamente apenas para extrair informacoes e gerar um resumo de apoio a analise do profissional.</p></div>
@@ -351,18 +434,19 @@ export default function NovaConsultaPage() {
                 <StepCard number="1" title="Selecionar arquivo">
                   <label className="flex min-h-[150px] cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-5 text-center transition-all hover:bg-white" style={{ borderColor: '#BFEDE2', backgroundColor: '#F8FFFE' }}>
                     <span className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl" style={{ backgroundColor: '#E6FAF6', color: T }}><UploadIcon /></span><span className="text-sm font-semibold" style={{ color: N }}>Escolher arquivo</span><span className="mt-1 text-xs" style={{ color: '#64748B' }}>PDF, JPG ou PNG ate 5 MB</span>
-                    <input type="file" multiple accept="application/pdf,image/jpeg,image/jpg,image/png" className="hidden" onChange={(event) => { handleDocumentSelection(event.target.files); event.currentTarget.value = '' }} />
+                    <input type="file" multiple accept="application/pdf,image/jpeg,image/jpg,image/png" className="hidden" onChange={(e) => { handleDocumentSelection(e.target.files); e.currentTarget.value = '' }} />
                   </label>
-                  {pendingDocuments.length > 0 && <div className="mt-3 space-y-1">{pendingDocuments.map((document) => <p key={document.id} className="truncate text-xs" style={{ color: '#64748B' }}>{document.name} - {formatBytes(document.size)}</p>)}</div>}
+                  {pendingDocuments.length > 0 && <div className="mt-3 space-y-1">{pendingDocuments.map((d) => <p key={d.id} className="truncate text-xs" style={{ color: '#64748B' }}>{d.name} - {formatBytes(d.size)}</p>)}</div>}
                 </StepCard>
-                <StepCard number="2" title="Tipo de documento"><Field label="Classificacao"><select value={documentType} onChange={(event) => setDocumentType(event.target.value)} className="input-field">{DOCUMENT_TYPES.map((type) => <option key={type.value} value={type.value}>{type.label}</option>)}</select></Field><p className="mt-3 text-xs leading-relaxed" style={{ color: '#64748B' }}>Escolha o tipo correto para ajudar a IA a organizar as informacoes sem confundir o medico.</p></StepCard>
+                <StepCard number="2" title="Tipo de documento"><Field label="Classificacao"><select value={documentType} onChange={(e) => setDocumentType(e.target.value)} className="input-field">{DOCUMENT_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}</select></Field><p className="mt-3 text-xs leading-relaxed" style={{ color: '#64748B' }}>Escolha o tipo correto para ajudar a IA a organizar as informacoes sem confundir o medico.</p></StepCard>
                 <StepCard number="3" title="Anexar ao atendimento"><button type="button" onClick={attachPendingDocuments} disabled={pendingDocuments.length === 0 || documentProcessing} className="w-full rounded-xl px-5 py-3 text-sm font-semibold text-white transition-all disabled:cursor-not-allowed disabled:opacity-50" style={{ backgroundColor: T, boxShadow: `0 4px 16px ${T}35` }}>{documentProcessing ? 'Extraindo texto...' : 'Anexar documento'}</button><p className="mt-3 text-xs leading-relaxed" style={{ color: '#64748B' }}>Nada e analisado antes de voce clicar em anexar. Revise o arquivo escolhido antes de continuar.</p></StepCard>
               </div>
-              <div className="mt-6 rounded-2xl p-5" style={{ border: '1px solid #DDE7EE', backgroundColor: '#F8FAFC' }}><p className="text-sm font-semibold" style={{ color: N }}>Documentos adicionados</p>{documents.length === 0 ? <p className="mt-2 text-sm" style={{ color: '#64748B' }}>Nenhum documento adicionado. Esta etapa e opcional; voce pode seguir sem anexos.</p> : <div className="mt-4 space-y-3">{documents.map((document) => <div key={document.id} className="rounded-xl bg-white p-4" style={{ border: '1px solid #DDE7EE' }}><div className="flex items-center justify-between gap-4"><div className="min-w-0"><p className="truncate text-sm font-semibold" style={{ color: N }}>{document.name}</p><p className="mt-0.5 text-xs" style={{ color: '#64748B' }}>{documentTypeLabel(document.type)} - {formatBytes(document.size)} - OCR concluido</p></div><button type="button" onClick={() => removeDocument(document.id)} className="text-xs font-semibold hover:underline" style={{ color: '#BE123C' }}>Remover</button></div><p className="mt-3 line-clamp-2 text-xs leading-relaxed" style={{ color: '#64748B' }}>{document.extractedText}</p></div>)}</div>}</div>
+              <div className="mt-6 rounded-2xl p-5" style={{ border: '1px solid #DDE7EE', backgroundColor: '#F8FAFC' }}><p className="text-sm font-semibold" style={{ color: N }}>Documentos adicionados</p>{documents.length === 0 ? <p className="mt-2 text-sm" style={{ color: '#64748B' }}>Nenhum documento adicionado. Esta etapa e opcional; voce pode seguir sem anexos.</p> : <div className="mt-4 space-y-3">{documents.map((d) => <div key={d.id} className="rounded-xl bg-white p-4" style={{ border: '1px solid #DDE7EE' }}><div className="flex items-center justify-between gap-4"><div className="min-w-0"><p className="truncate text-sm font-semibold" style={{ color: N }}>{d.name}</p><p className="mt-0.5 text-xs" style={{ color: '#64748B' }}>{documentTypeLabel(d.type)} - {formatBytes(d.size)} - OCR concluido</p></div><button type="button" onClick={() => removeDocument(d.id)} className="text-xs font-semibold hover:underline" style={{ color: '#BE123C' }}>Remover</button></div><p className="mt-3 line-clamp-2 text-xs leading-relaxed" style={{ color: '#64748B' }}>{d.extractedText}</p></div>)}</div>}</div>
               <StepActions backLabel="Voltar para pre-triagem" nextLabel="Continuar para pagamento" onBack={() => setActiveStep('triage')} onNext={() => setActiveStep('payment')} nextDisabled={documentProcessing} />
             </section>
           )}
 
+          {/* ── PAGAMENTO ── */}
           {activeStep === 'payment' && (
             <section className="mt-8 rounded-2xl bg-white p-6 shadow-sm" style={{ border: '1px solid #E2E8F0' }}>
               <div className="mb-6"><p className="text-xs font-semibold" style={{ color: T }}>{selected.label}</p><h2 className="mt-2 text-xl font-bold" style={{ color: N }}>Pagamento</h2><p className="mt-1 text-sm" style={{ color: '#64748B' }}>Esta etapa esta pronta para receber Pix/cartao depois. Por enquanto, voce pode avancar direto para a consulta.</p></div>
@@ -372,6 +456,7 @@ export default function NovaConsultaPage() {
             </section>
           )}
 
+          {/* ── CONSULTA ── */}
           {activeStep === 'consultation' && (
             <section className="mt-8 rounded-2xl bg-white p-6 shadow-sm" style={{ border: '1px solid #E2E8F0' }}>
               <div className="mb-6"><p className="text-xs font-semibold" style={{ color: T }}>{selected.label}</p><h2 className="mt-2 text-xl font-bold" style={{ color: N }}>Sala de consulta</h2><p className="mt-1 text-sm" style={{ color: '#64748B' }}>O paciente chegou ao ponto final do agendamento. Aqui validamos o resumo que sera exibido ao medico.</p></div>
@@ -399,6 +484,8 @@ export default function NovaConsultaPage() {
           border-color: ${T};
           box-shadow: 0 0 0 3px ${T}20;
         }
+        @keyframes spin { to { transform: rotate(360deg) } }
+        .spin { animation: spin 0.8s linear infinite }
       `}</style>
     </main>
   )
@@ -425,7 +512,7 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   return <label className="block"><span className="mb-1.5 block text-sm font-semibold" style={{ color: N }}>{label}</span>{children}</label>
 }
 
-function Toggle({ checked, label, onChange }: { checked: boolean; label: string; onChange: (value: boolean) => void }) {
+function Toggle({ checked, label, onChange }: { checked: boolean; label: string; onChange: (v: boolean) => void }) {
   return (
     <button type="button" onClick={() => onChange(!checked)} className="flex items-center justify-between gap-4 rounded-xl p-4 text-left transition-all" style={{ border: `1px solid ${checked ? T : '#DDE7EE'}`, backgroundColor: checked ? '#F0FDF9' : 'white' }}>
       <span className="text-sm font-medium" style={{ color: N }}>{label}</span>
@@ -453,19 +540,14 @@ function SummaryCard({ label, value }: { label: string; value: string }) {
 
 function AiSummaryCard({ status, summary, error }: { status: AiStatus; summary: string; error: string }) {
   const parsed = parseSummary(summary)
-
   return (
     <div className="mt-6 rounded-2xl p-5" style={{ backgroundColor: '#F8FAFC', border: '1px solid #DDE7EE' }}>
       <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-sm font-semibold" style={{ color: N }}>Resumo da IA para apoio medico</p>
-          <p className="mt-1 text-xs" style={{ color: '#64748B' }}>Gerado a partir da pre-triagem, respostas objetivas e textos extraidos dos documentos.</p>
-        </div>
+        <div><p className="text-sm font-semibold" style={{ color: N }}>Resumo da IA para apoio medico</p><p className="mt-1 text-xs" style={{ color: '#64748B' }}>Gerado a partir da pre-triagem, respostas objetivas e textos extraidos dos documentos.</p></div>
         <span className="rounded-full px-3 py-1 text-xs font-semibold" style={{ backgroundColor: status === 'ready' ? '#E6FAF6' : '#EEF2F7', color: status === 'error' ? '#BE123C' : T }}>
           {status === 'loading' ? 'Gerando...' : status === 'ready' ? 'Concluido' : status === 'error' ? 'Erro' : 'Aguardando'}
         </span>
       </div>
-
       {status === 'loading' && <p className="mt-5 text-sm" style={{ color: '#64748B' }}>A IA esta organizando as informacoes para o medico.</p>}
       {status === 'error' && <p className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</p>}
       {status === 'ready' && parsed && (
@@ -492,7 +574,15 @@ function SummarySection({ title, value }: { title: string; value: string | undef
 
 function SummaryList({ title, values }: { title: string; values: string[] | undefined }) {
   if (!values || values.length === 0) return null
-  return <div className="rounded-xl bg-white p-4" style={{ border: '1px solid #E2E8F0' }}><p className="text-xs font-semibold" style={{ color: T }}>{title}</p><ul className="mt-2 space-y-1 text-sm leading-relaxed" style={{ color: '#475569' }}>{values.map((value, index) => <li key={`${title}-${index}`}>- {value}</li>)}</ul></div>
+  return <div className="rounded-xl bg-white p-4" style={{ border: '1px solid #E2E8F0' }}><p className="text-xs font-semibold" style={{ color: T }}>{title}</p><ul className="mt-2 space-y-1 text-sm leading-relaxed" style={{ color: '#475569' }}>{values.map((v, i) => <li key={`${title}-${i}`}>- {v}</li>)}</ul></div>
+}
+
+function SpinnerIcon() {
+  return (
+    <svg className="spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+      <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+    </svg>
+  )
 }
 
 function UploadIcon() {
@@ -500,7 +590,7 @@ function UploadIcon() {
 }
 
 function documentTypeLabel(value: string) {
-  return DOCUMENT_TYPES.find((type) => type.value === value)?.label ?? 'Documento'
+  return DOCUMENT_TYPES.find((t) => t.value === value)?.label ?? 'Documento'
 }
 
 function formatBytes(bytes: number) {
