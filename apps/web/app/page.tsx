@@ -189,17 +189,17 @@ function HowItWorks() {
 /* ─── SPECIALTIES ─── */
 function Specialties() {
   const specs = [
-    { label: 'Clínica Geral',        icon: <HeartbeatIcon /> },
-    { label: 'Pediatria',            icon: <ChildIcon /> },
-    { label: 'Dermatologia',         icon: <SkinIcon /> },
-    { label: 'Cardiologia',          icon: <HeartIcon /> },
-    { label: 'Ginecologia',          icon: <WomenIcon /> },
-    { label: 'Ortopedia',            icon: <BoneIcon /> },
-    { label: 'Neurologia',           icon: <BrainIcon /> },
-    { label: 'Psiquiatria',          icon: <MindIcon /> },
-    { label: 'Endocrinologia',       icon: <ChemIcon /> },
-    { label: 'Gastroenterologia',    icon: <GutIcon /> },
-    { label: 'Otorrinolaringologia', icon: <EarIcon /> },
+    { label: 'Clínica Geral',        icon: '/icons/clm.png' },
+    { label: 'Pediatria',            icon: '/icons/ped.png' },
+    { label: 'Dermatologia',         icon: '/icons/der.png' },
+    { label: 'Cardiologia',          icon: '/icons/car.png' },
+    { label: 'Ginecologia',          icon: '/icons/gin.png' },
+    { label: 'Ortopedia',            icon: '/icons/ort.png' },
+    { label: 'Neurologia',           icon: '/icons/neu.png' },
+    { label: 'Psiquiatria',          icon: '/icons/psi.png' },
+    { label: 'Endocrinologia',       icon: '/icons/end.png' },
+    { label: 'Gastroenterologia',    icon: '/icons/gas.png' },
+    { label: 'Otorrinolaringologia', icon: '/icons/oto.png' },
   ]
 
   return (
@@ -214,9 +214,8 @@ function Specialties() {
             <div key={s.label}
               className="flex flex-col items-center gap-2 py-4 px-2 rounded-2xl cursor-pointer transition-all hover:shadow-md group"
               style={{ border: '1px solid #E2E8F0' }}>
-              <div className="h-10 w-10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform"
-                style={{ color: T }}>
-                {s.icon}
+              <div className="h-12 w-12 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Image src={s.icon} alt={s.label} width={42} height={42} className="object-contain" />
               </div>
               <span className="text-xs font-medium text-center leading-tight" style={{ color: '#475569' }}>{s.label}</span>
             </div>
@@ -519,47 +518,3 @@ const DocIcon = () => (
   </svg>
 )
 const ShieldIcon = () => <Ico d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-const HeartbeatIcon = () => <Ico d="M22 12h-4l-3 9L9 3l-3 9H2" />
-const HeartIcon = () => <Ico d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-const ChildIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="5" r="2.5" /><path d="M12 8v6m-3 4h6M9.5 11l-1.5 7m7.5-7 1.5 7" />
-  </svg>
-)
-const SkinIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="4" />
-  </svg>
-)
-const WomenIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="8" r="5" /><path d="M12 13v8m-3-3h6" />
-  </svg>
-)
-const BoneIcon = () => <Ico d="M18.5 2.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L18.5 2.5z" />
-const BrainIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-5-0.5 2.5 2.5 0 0 1-3-2.5 3 3 0 1 1 0-6 2.5 2.5 0 0 1 3-2.5A2.5 2.5 0 0 1 9.5 2M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 5-0.5 2.5 2.5 0 0 0 3-2.5 3 3 0 1 0 0-6 2.5 2.5 0 0 0-3-2.5A2.5 2.5 0 0 0 14.5 2z" />
-  </svg>
-)
-const MindIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" />
-  </svg>
-)
-const ChemIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M9 3h6v9l4 7H5l4-7V3z" /><line x1="6" y1="9" x2="18" y2="9" />
-  </svg>
-)
-const GutIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 2C8 2 5 5 5 8c0 2 1 3.5 1 5 0 2-2 3-2 5a4 4 0 0 0 4 4c2 0 3-1 4-1s2 1 4 1a4 4 0 0 0 4-4c0-2-2-3-2-5 0-1.5 1-3 1-5 0-3-3-6-7-6z" />
-  </svg>
-)
-const EarIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M6 8a6 6 0 1 1 12 0c0 3-2 4-3 6-1 1.5-.5 3-2 4a2 2 0 0 1-3-1" />
-    <path d="M10 13a2 2 0 1 0 2-2" />
-  </svg>
-)
