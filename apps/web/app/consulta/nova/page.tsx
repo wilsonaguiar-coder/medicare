@@ -185,57 +185,59 @@ export default function NovaConsultaPage() {
             </div>
           )}
 
-          <section className={isIdentified ? 'mt-8' : 'pointer-events-none mt-8 opacity-45'}>
-            <div className="mb-5 flex items-center justify-between gap-4">
-              <div>
-                <h2 className="text-xl font-bold" style={{ color: N }}>Especialidades disponíveis</h2>
-                <p className="mt-1 text-sm" style={{ color: '#64748B' }}>
-                  {isIdentified ? 'Selecione uma opção para seguir para a pré-triagem.' : 'Esta etapa será liberada após login ou cadastro.'}
-                </p>
+          {isIdentified && (
+            <section className="mt-8">
+              <div className="mb-5 flex items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-xl font-bold" style={{ color: N }}>Especialidades disponíveis</h2>
+                  <p className="mt-1 text-sm" style={{ color: '#64748B' }}>
+                    Selecione uma opção para seguir para a pré-triagem.
+                  </p>
+                </div>
               </div>
-            </div>
 
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {SPECIALTIES.map((specialty) => {
-                const selected = specialty.key === selectedSpecialty
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {SPECIALTIES.map((specialty) => {
+                  const selected = specialty.key === selectedSpecialty
 
-                return (
-                  <button
-                    key={specialty.key}
-                    type="button"
-                    onClick={() => setSelectedSpecialty(specialty.key)}
-                    className="flex items-center gap-3 rounded-xl border bg-white p-4 text-left transition-all hover:shadow-sm focus:outline-none"
-                    style={{
-                      borderColor: selected ? T : '#E2E8F0',
-                      backgroundColor: selected ? '#F0FDF9' : 'white',
-                    }}
-                  >
-                    <Image src={specialty.icon} alt={specialty.label} width={40} height={40} className="flex-shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold" style={{ color: N }}>{specialty.label}</p>
-                      <p className="text-xs" style={{ color: '#64748B' }}>R$ {specialty.price},00 · 30 min</p>
-                    </div>
-                    {selected && <span style={{ color: T }}>✓</span>}
-                  </button>
-                )
-              })}
-            </div>
-
-            <button
-              type="button"
-              className="mt-4 flex w-full items-center gap-4 rounded-xl border-2 p-4 text-left transition-all hover:opacity-90 focus:outline-none"
-              style={{ borderColor: T, backgroundColor: '#F0FDF9' }}
-            >
-              <span className="text-3xl">?</span>
-              <div className="flex-1">
-                <p className="text-sm font-semibold" style={{ color: N }}>Não sei qual especialidade escolher</p>
-                <p className="mt-0.5 text-xs" style={{ color: '#475569' }}>
-                  Descreva seus sintomas e nossa IA irá indicar a especialidade mais adequada para você.
-                </p>
+                  return (
+                    <button
+                      key={specialty.key}
+                      type="button"
+                      onClick={() => setSelectedSpecialty(specialty.key)}
+                      className="flex items-center gap-3 rounded-xl border bg-white p-4 text-left transition-all hover:shadow-sm focus:outline-none"
+                      style={{
+                        borderColor: selected ? T : '#E2E8F0',
+                        backgroundColor: selected ? '#F0FDF9' : 'white',
+                      }}
+                    >
+                      <Image src={specialty.icon} alt={specialty.label} width={40} height={40} className="flex-shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold" style={{ color: N }}>{specialty.label}</p>
+                        <p className="text-xs" style={{ color: '#64748B' }}>R$ {specialty.price},00 · 30 min</p>
+                      </div>
+                      {selected && <span style={{ color: T }}>✓</span>}
+                    </button>
+                  )
+                })}
               </div>
-              <span className="text-sm font-semibold" style={{ color: T }}>Em breve</span>
-            </button>
-          </section>
+
+              <button
+                type="button"
+                className="mt-4 flex w-full items-center gap-4 rounded-xl border-2 p-4 text-left transition-all hover:opacity-90 focus:outline-none"
+                style={{ borderColor: T, backgroundColor: '#F0FDF9' }}
+              >
+                <span className="text-3xl">?</span>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold" style={{ color: N }}>Não sei qual especialidade escolher</p>
+                  <p className="mt-0.5 text-xs" style={{ color: '#475569' }}>
+                    Descreva seus sintomas e nossa IA irá indicar a especialidade mais adequada para você.
+                  </p>
+                </div>
+                <span className="text-sm font-semibold" style={{ color: T }}>Em breve</span>
+              </button>
+            </section>
+          )}
         </div>
       </section>
 
