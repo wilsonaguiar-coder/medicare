@@ -234,7 +234,7 @@ export default function NovaConsultaPage() {
               {activeStep === 'identification' && 'Para proteger seus dados de saude e manter seu historico de atendimento, a consulta comeca com login ou cadastro do paciente.'}
               {activeStep === 'specialty' && 'Agora selecione o tipo de atendimento desejado para continuar o agendamento.'}
               {activeStep === 'triage' && 'Essas informacoes ajudam o medico a se preparar antes da consulta.'}
-              {activeStep === 'documents' && 'Ao anexar, o arquivo e lido temporariamente pela API para extrair texto e gerar apoio da IA.'}
+              {activeStep === 'documents' && 'Nenhum documento sera salvo no servidor. A leitura e temporaria e serve apenas para gerar um resumo de apoio ao profissional.'}
               {activeStep === 'payment' && 'Confira o resumo da consulta. A integracao de pagamento sera conectada mais adiante.'}
               {activeStep === 'consultation' && 'Veja se o resumo da IA foi gerado corretamente para apoiar a leitura do medico.'}
             </p>
@@ -344,8 +344,8 @@ export default function NovaConsultaPage() {
 
           {activeStep === 'documents' && (
             <section className="mt-8 rounded-2xl bg-white p-6 shadow-sm" style={{ border: '1px solid #E2E8F0' }}>
-              <div className="mb-6"><p className="text-xs font-semibold" style={{ color: T }}>{selected.label}</p><h2 className="mt-2 text-xl font-bold" style={{ color: N }}>Documentos</h2><p className="mt-1 text-sm" style={{ color: '#64748B' }}>Os arquivos serao usados apenas para extrair texto e gerar uma analise de apoio. O documento original nao sera salvo.</p></div>
-              <div className="mb-5 rounded-2xl p-4 text-sm leading-relaxed" style={{ backgroundColor: '#F0FDF9', color: '#475569', border: `1px solid ${T}30` }}><strong style={{ color: N }}>Privacidade:</strong> depois da extracao, somente o texto extraido e o resumo gerado pela IA ficarao no historico do paciente. O arquivo original sera descartado.</div>
+              <div className="mb-6"><p className="text-xs font-semibold" style={{ color: T }}>{selected.label}</p><h2 className="mt-2 text-xl font-bold" style={{ color: N }}>Documentos</h2><p className="mt-1 text-sm" style={{ color: '#64748B' }}>Nenhum documento original sera salvo no servidor. O arquivo sera lido temporariamente apenas para extrair informacoes e gerar um resumo de apoio a analise do profissional.</p></div>
+              <div className="mb-5 rounded-2xl p-4 text-sm leading-relaxed" style={{ backgroundColor: '#F0FDF9', color: '#475569', border: `1px solid ${T}30` }}><strong style={{ color: N }}>Privacidade:</strong> os documentos originais nao ficam armazenados no servidor. A Medicare usa o arquivo somente durante o processamento para gerar um resumo destinado a analise do profissional de saude.</div>
               {documentError && <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{documentError}</div>}
               <div className="grid gap-4 lg:grid-cols-3">
                 <StepCard number="1" title="Selecionar arquivo">
