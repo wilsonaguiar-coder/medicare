@@ -6,9 +6,10 @@ import { DocumentsService } from './documents.service'
 import { DocumentExtractionService } from './document-extraction.service'
 import { PatientDocumentInsight } from './entities/patient-document-insight.entity'
 import { AiModule } from '../ai/ai.module'
+import { ConsultationsModule } from '../consultations/consultations.module'
 
 @Module({
-  imports: [TypeOrmModule.forFeature([PatientDocumentInsight]), AiModule],
+  imports: [TypeOrmModule.forFeature([PatientDocumentInsight]), AiModule, ConsultationsModule],
   controllers: [DocumentsController, DocumentProcessingController],
   providers: [DocumentsService, DocumentExtractionService],
   exports: [DocumentsService],
