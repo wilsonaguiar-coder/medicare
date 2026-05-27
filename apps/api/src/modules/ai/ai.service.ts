@@ -92,7 +92,7 @@ export class AiService {
           content: `Organize as informacoes do seguinte documento medico. Use apenas o texto fornecido.\n\n${text}`,
         },
       ],
-      max_tokens: 1000,
+      max_completion_tokens: 1000,
       temperature: 0.1,
     })
 
@@ -125,7 +125,7 @@ export class AiService {
           content: JSON.stringify(input),
         },
       ],
-      max_tokens: 1200,
+      max_completion_tokens: 1200,
       temperature: 0.1,
     })
 
@@ -150,7 +150,7 @@ export class AiService {
           content: `Especialidade: ${specialty}. Queixa principal: ${chiefComplaint}. Sugira um modelo de anamnese.`,
         },
       ],
-      max_tokens: 600,
+      max_completion_tokens: 600,
       temperature: 0.2,
     })
 
