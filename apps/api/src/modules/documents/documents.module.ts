@@ -1,17 +1,15 @@
 import { Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
-import { BullModule } from '@nestjs/bull'
 import { DocumentsController } from './documents.controller'
 import { DocumentsService } from './documents.service'
-import { MedicalDocument } from './entities/medical-document.entity'
+import { DocumentExtractionService } from './document-extraction.service'
+import { PatientDocumentInsight } from './entities/patient-document-insight.entity'
+import { AiModule } from '../ai/ai.module'
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([MedicalDocument]),
-    BullModule.registerQueue({ name: 'ai-processing' }),
-  ],
+  imports: [TypeOrmModule.forFeature([PatientDocumentInsight]), AiModule],
   controllers: [DocumentsController],
-  providers: [DocumentsService],
+  providers: [DocumentsService, DocumentExtractionService],
   exports: [DocumentsService],
 })
 export class DocumentsModule {}
