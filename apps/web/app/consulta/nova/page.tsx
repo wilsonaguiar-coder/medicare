@@ -6,8 +6,17 @@ import Image from 'next/image'
 import Link from 'next/link'
 
 type FlowStep = 'identification' | 'specialty' | 'triage' | 'documents'
+type UploadedDocument = { id: string; name: string; size: number; type: string }
 
 const MIN_SYMPTOMS_LENGTH = 50
+
+const DOCUMENT_TYPES = [
+  { value: 'LAB_RESULT', label: 'Exame laboratorial' },
+  { value: 'MEDICAL_REPORT', label: 'Laudo médico' },
+  { value: 'PRESCRIPTION', label: 'Receita médica' },
+  { value: 'CLINICAL_REPORT', label: 'Relatório clínico' },
+  { value: 'OTHER', label: 'Outro documento' },
+]
 
 const SPECIALTIES: { key: string; label: string; icon: string; price: number }[] = [
   { key: 'CLINICAL_MEDICINE',    label: 'Clínica Médica',       icon: '/clm.png', price: 120 },
@@ -52,6 +61,8 @@ export default function NovaConsultaPage() {
   const [hasAllergy, setHasAllergy] = useState(false)
   const [usesMedication, setUsesMedication] = useState(false)
   const [isPregnant, setIsPregnant] = useState(false)
+  const [documentType, setDocumentType] = useState(DOCUMENT_TYPES[0].value)
+  const [documents, setDocuments] = useState<UploadedDocument[]>([])
 
   const selected = SPECIALTIES.find((specialty) => specialty.key === selectedSpecialty) ?? SPECIALTIES[0]
   const symptomsLength = symptoms.trim().length
@@ -62,6 +73,23 @@ export default function NovaConsultaPage() {
     password.length >= 6 &&
     acceptedTerms
   const canContinueTriage = symptomsLength >= MIN_SYMPTOMS_LENGTH
+
+  function handleDocuments(files: FileList | null) {
+    if (!files) return
+
+    const nextDocuments = Array.from(files).map((file) => ({
+      id: `${file.name}-${file.size}-${Date.now()}-${Math.random()}`,
+      name: file.name,
+      size: file.size,
+      type: documentType,
+    }))
+
+    setDocuments((current) => [...current, ...nextDocuments])
+  }
+
+  function removeDocument(id: string) {
+    setDocuments((current) => current.filter((document) => document.id !== id))
+  }
 
   return (
     <main className="min-h-screen" style={{ backgroundColor: '#F8FAFC', color: N, fontFamily: "'Inter', system-ui, sans-serif" }}>
@@ -330,12 +358,58 @@ export default function NovaConsultaPage() {
                 </p>
               </div>
 
-              <div className="rounded-2xl border-2 border-dashed p-8 text-center" style={{ borderColor: '#BFEDE2', backgroundColor: '#F8FFFE' }}>
-                <p className="text-sm font-semibold" style={{ color: N }}>Upload de documentos</p>
-                <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed" style={{ color: '#64748B' }}>
-                  Esta etapa já está preparada no fluxo. Na próxima fase, conectamos o envio real de arquivos e a lista de anexos.
-                </p>
+              <div className="grid gap-5 lg:grid-cols-[280px_1fr]">
+                <div className="rounded-2xl p-5" style={{ border: '1px solid #DDE7EE', backgroundColor: '#F8FAFC' }}>
+                  <Field label="Tipo do documento">
+                    <select value={documentType} onChange={(event) => setDocumentType(event.target.value)} className="input-field">
+                      {DOCUMENT_TYPES.map((type) => (
+                        <option key={type.value} value={type.value}>{type.label}</option>
+                      ))}
+                    </select>
+                  </Field>
+
+                  <div className="mt-4 rounded-xl p-4 text-xs leading-relaxed" style={{ backgroundColor: '#F0FDF9', color: '#475569', border: `1px solid ${T}30` }}>
+                    PDFs e imagens enviados aqui poderão ser processados por OCR e resumidos pela IA para apoiar o médico antes da consulta.
+                  </div>
+                </div>
+
+                <label
+                  className="flex min-h-[220px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed p-8 text-center transition-all hover:bg-white"
+                  style={{ borderColor: '#BFEDE2', backgroundColor: '#F8FFFE' }}
+                >
+                  <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl" style={{ backgroundColor: '#E6FAF6', color: T }}>
+                    <UploadIcon />
+                  </span>
+                  <span className="text-sm font-semibold" style={{ color: N }}>Selecionar arquivos</span>
+                  <span className="mt-1 text-xs" style={{ color: '#64748B' }}>PDF, JPG ou PNG até 10 MB por arquivo</span>
+                  <input
+                    type="file"
+                    multiple
+                    accept="application/pdf,image/jpeg,image/jpg,image/png"
+                    className="hidden"
+                    onChange={(event) => handleDocuments(event.target.files)}
+                  />
+                </label>
               </div>
+
+              {documents.length > 0 && (
+                <div className="mt-6 space-y-3">
+                  <p className="text-sm font-semibold" style={{ color: N }}>Arquivos selecionados</p>
+                  {documents.map((document) => (
+                    <div key={document.id} className="flex items-center justify-between gap-4 rounded-xl p-4" style={{ border: '1px solid #DDE7EE', backgroundColor: 'white' }}>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold" style={{ color: N }}>{document.name}</p>
+                        <p className="mt-0.5 text-xs" style={{ color: '#64748B' }}>
+                          {documentTypeLabel(document.type)} · {formatBytes(document.size)} · aguardando envio
+                        </p>
+                      </div>
+                      <button type="button" onClick={() => removeDocument(document.id)} className="text-xs font-semibold hover:underline" style={{ color: '#BE123C' }}>
+                        Remover
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               <StepActions
                 backLabel="Voltar para pré-triagem"
@@ -456,4 +530,23 @@ function StepActions({
       </button>
     </div>
   )
+}
+
+function UploadIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="17 8 12 3 7 8" />
+      <line x1="12" y1="3" x2="12" y2="15" />
+    </svg>
+  )
+}
+
+function documentTypeLabel(value: string) {
+  return DOCUMENT_TYPES.find((type) => type.value === value)?.label ?? 'Documento'
+}
+
+function formatBytes(bytes: number) {
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`
 }
