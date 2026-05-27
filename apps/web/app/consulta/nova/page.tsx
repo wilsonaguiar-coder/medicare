@@ -6,9 +6,18 @@ import Image from 'next/image'
 import Link from 'next/link'
 
 type FlowStep = 'identification' | 'specialty' | 'triage' | 'documents' | 'payment' | 'consultation'
-type UploadedDocument = { id: string; name: string; size: number; type: string }
-type PendingDocument = { id: string; name: string; size: number }
+type PendingDocument = { id: string; name: string; size: number; file: File }
+type UploadedDocument = {
+  id: string
+  name: string
+  size: number
+  type: string
+  extractedText: string
+  aiSummary: string
+}
+type AiStatus = 'idle' | 'loading' | 'ready' | 'error'
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '/api/v1'
 const MIN_SYMPTOMS_LENGTH = 50
 const MAX_DOCUMENT_SIZE_BYTES = 5 * 1024 * 1024
 const ALLOWED_DOCUMENT_TYPES = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png']
@@ -68,6 +77,10 @@ export default function NovaConsultaPage() {
   const [pendingDocuments, setPendingDocuments] = useState<PendingDocument[]>([])
   const [documents, setDocuments] = useState<UploadedDocument[]>([])
   const [documentError, setDocumentError] = useState('')
+  const [documentProcessing, setDocumentProcessing] = useState(false)
+  const [consultationSummary, setConsultationSummary] = useState('')
+  const [summaryStatus, setSummaryStatus] = useState<AiStatus>('idle')
+  const [summaryError, setSummaryError] = useState('')
 
   const selected = SPECIALTIES.find((specialty) => specialty.key === selectedSpecialty) ?? SPECIALTIES[0]
   const symptomsLength = symptoms.trim().length
@@ -78,6 +91,14 @@ export default function NovaConsultaPage() {
     password.length >= 6 &&
     acceptedTerms
   const canContinueTriage = symptomsLength >= MIN_SYMPTOMS_LENGTH
+  const triageFlags = {
+    hasFever,
+    hasPain,
+    hasShortnessOfBreath,
+    hasAllergy,
+    usesMedication,
+    isPregnant,
+  }
 
   function handleDocumentSelection(files: FileList | null) {
     if (!files) return
@@ -103,22 +124,87 @@ export default function NovaConsultaPage() {
         id: `${file.name}-${file.size}-${Date.now()}-${Math.random()}`,
         name: file.name,
         size: file.size,
+        file,
       })),
     )
   }
 
-  function attachPendingDocuments() {
+  async function attachPendingDocuments() {
     if (pendingDocuments.length === 0) {
       setDocumentError('Selecione pelo menos um arquivo antes de anexar.')
       return
     }
 
+    setDocumentProcessing(true)
     setDocumentError('')
-    setDocuments((current) => [
-      ...current,
-      ...pendingDocuments.map((document) => ({ ...document, type: documentType })),
-    ])
-    setPendingDocuments([])
+
+    try {
+      const processedDocuments: UploadedDocument[] = []
+
+      for (const document of pendingDocuments) {
+        const formData = new FormData()
+        formData.append('file', document.file)
+        formData.append('type', documentType)
+
+        const response = await fetch(`${API_BASE}/documents/test/extract`, {
+          method: 'POST',
+          body: formData,
+        })
+
+        if (!response.ok) {
+          throw new Error(await getApiError(response))
+        }
+
+        const result = await response.json() as { extractedText: string; aiSummary: string }
+        processedDocuments.push({
+          id: document.id,
+          name: document.name,
+          size: document.size,
+          type: documentType,
+          extractedText: result.extractedText,
+          aiSummary: result.aiSummary,
+        })
+      }
+
+      setDocuments((current) => [...current, ...processedDocuments])
+      setPendingDocuments([])
+    } catch (error) {
+      setDocumentError(error instanceof Error ? error.message : 'Nao foi possivel processar o documento.')
+    } finally {
+      setDocumentProcessing(false)
+    }
+  }
+
+  async function prepareConsultationSummary() {
+    setActiveStep('consultation')
+    setSummaryStatus('loading')
+    setSummaryError('')
+
+    try {
+      const response = await fetch(`${API_BASE}/documents/test/prepare-consultation`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          specialty: selected.label,
+          symptoms,
+          symptomDuration: duration,
+          flags: triageFlags,
+          documentSummaries: documents.map((document) => document.aiSummary),
+          extractedTexts: documents.map((document) => document.extractedText),
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(await getApiError(response))
+      }
+
+      const result = await response.json() as { summary: string }
+      setConsultationSummary(result.summary)
+      setSummaryStatus('ready')
+    } catch (error) {
+      setSummaryError(error instanceof Error ? error.message : 'Nao foi possivel gerar o resumo da IA.')
+      setSummaryStatus('error')
+    }
   }
 
   function removeDocument(id: string) {
@@ -148,9 +234,9 @@ export default function NovaConsultaPage() {
               {activeStep === 'identification' && 'Para proteger seus dados de saude e manter seu historico de atendimento, a consulta comeca com login ou cadastro do paciente.'}
               {activeStep === 'specialty' && 'Agora selecione o tipo de atendimento desejado para continuar o agendamento.'}
               {activeStep === 'triage' && 'Essas informacoes ajudam o medico a se preparar antes da consulta.'}
-              {activeStep === 'documents' && 'Selecione o arquivo, escolha o tipo e so entao anexe. Assim voce evita enviar algo errado para analise.'}
+              {activeStep === 'documents' && 'Ao anexar, o arquivo e lido temporariamente pela API para extrair texto e gerar apoio da IA.'}
               {activeStep === 'payment' && 'Confira o resumo da consulta. A integracao de pagamento sera conectada mais adiante.'}
-              {activeStep === 'consultation' && 'Nesta etapa o paciente sera encaminhado para a sala ou fila de atendimento medico.'}
+              {activeStep === 'consultation' && 'Veja se o resumo da IA foi gerado corretamente para apoiar a leitura do medico.'}
             </p>
           </div>
 
@@ -270,10 +356,10 @@ export default function NovaConsultaPage() {
                   {pendingDocuments.length > 0 && <div className="mt-3 space-y-1">{pendingDocuments.map((document) => <p key={document.id} className="truncate text-xs" style={{ color: '#64748B' }}>{document.name} - {formatBytes(document.size)}</p>)}</div>}
                 </StepCard>
                 <StepCard number="2" title="Tipo de documento"><Field label="Classificacao"><select value={documentType} onChange={(event) => setDocumentType(event.target.value)} className="input-field">{DOCUMENT_TYPES.map((type) => <option key={type.value} value={type.value}>{type.label}</option>)}</select></Field><p className="mt-3 text-xs leading-relaxed" style={{ color: '#64748B' }}>Escolha o tipo correto para ajudar a IA a organizar as informacoes sem confundir o medico.</p></StepCard>
-                <StepCard number="3" title="Anexar ao atendimento"><button type="button" onClick={attachPendingDocuments} disabled={pendingDocuments.length === 0} className="w-full rounded-xl px-5 py-3 text-sm font-semibold text-white transition-all disabled:cursor-not-allowed disabled:opacity-50" style={{ backgroundColor: T, boxShadow: `0 4px 16px ${T}35` }}>Anexar documento</button><p className="mt-3 text-xs leading-relaxed" style={{ color: '#64748B' }}>Nada e analisado antes de voce clicar em anexar. Revise o arquivo escolhido antes de continuar.</p></StepCard>
+                <StepCard number="3" title="Anexar ao atendimento"><button type="button" onClick={attachPendingDocuments} disabled={pendingDocuments.length === 0 || documentProcessing} className="w-full rounded-xl px-5 py-3 text-sm font-semibold text-white transition-all disabled:cursor-not-allowed disabled:opacity-50" style={{ backgroundColor: T, boxShadow: `0 4px 16px ${T}35` }}>{documentProcessing ? 'Extraindo texto...' : 'Anexar documento'}</button><p className="mt-3 text-xs leading-relaxed" style={{ color: '#64748B' }}>Nada e analisado antes de voce clicar em anexar. Revise o arquivo escolhido antes de continuar.</p></StepCard>
               </div>
-              <div className="mt-6 rounded-2xl p-5" style={{ border: '1px solid #DDE7EE', backgroundColor: '#F8FAFC' }}><p className="text-sm font-semibold" style={{ color: N }}>Documentos adicionados</p>{documents.length === 0 ? <p className="mt-2 text-sm" style={{ color: '#64748B' }}>Nenhum documento adicionado. Esta etapa e opcional; voce pode seguir sem anexos.</p> : <div className="mt-4 space-y-3">{documents.map((document) => <div key={document.id} className="flex items-center justify-between gap-4 rounded-xl bg-white p-4" style={{ border: '1px solid #DDE7EE' }}><div className="min-w-0"><p className="truncate text-sm font-semibold" style={{ color: N }}>{document.name}</p><p className="mt-0.5 text-xs" style={{ color: '#64748B' }}>{documentTypeLabel(document.type)} - {formatBytes(document.size)} - arquivo nao sera armazenado</p></div><button type="button" onClick={() => removeDocument(document.id)} className="text-xs font-semibold hover:underline" style={{ color: '#BE123C' }}>Remover</button></div>)}</div>}</div>
-              <StepActions backLabel="Voltar para pre-triagem" nextLabel="Continuar para pagamento" onBack={() => setActiveStep('triage')} onNext={() => setActiveStep('payment')} />
+              <div className="mt-6 rounded-2xl p-5" style={{ border: '1px solid #DDE7EE', backgroundColor: '#F8FAFC' }}><p className="text-sm font-semibold" style={{ color: N }}>Documentos adicionados</p>{documents.length === 0 ? <p className="mt-2 text-sm" style={{ color: '#64748B' }}>Nenhum documento adicionado. Esta etapa e opcional; voce pode seguir sem anexos.</p> : <div className="mt-4 space-y-3">{documents.map((document) => <div key={document.id} className="rounded-xl bg-white p-4" style={{ border: '1px solid #DDE7EE' }}><div className="flex items-center justify-between gap-4"><div className="min-w-0"><p className="truncate text-sm font-semibold" style={{ color: N }}>{document.name}</p><p className="mt-0.5 text-xs" style={{ color: '#64748B' }}>{documentTypeLabel(document.type)} - {formatBytes(document.size)} - OCR concluido</p></div><button type="button" onClick={() => removeDocument(document.id)} className="text-xs font-semibold hover:underline" style={{ color: '#BE123C' }}>Remover</button></div><p className="mt-3 line-clamp-2 text-xs leading-relaxed" style={{ color: '#64748B' }}>{document.extractedText}</p></div>)}</div>}</div>
+              <StepActions backLabel="Voltar para pre-triagem" nextLabel="Continuar para pagamento" onBack={() => setActiveStep('triage')} onNext={() => setActiveStep('payment')} nextDisabled={documentProcessing} />
             </section>
           )}
 
@@ -281,17 +367,17 @@ export default function NovaConsultaPage() {
             <section className="mt-8 rounded-2xl bg-white p-6 shadow-sm" style={{ border: '1px solid #E2E8F0' }}>
               <div className="mb-6"><p className="text-xs font-semibold" style={{ color: T }}>{selected.label}</p><h2 className="mt-2 text-xl font-bold" style={{ color: N }}>Pagamento</h2><p className="mt-1 text-sm" style={{ color: '#64748B' }}>Esta etapa esta pronta para receber Pix/cartao depois. Por enquanto, voce pode avancar direto para a consulta.</p></div>
               <div className="grid gap-4 md:grid-cols-3"><SummaryCard label="Especialidade" value={selected.label} /><SummaryCard label="Documentos" value={`${documents.length} anexado${documents.length === 1 ? '' : 's'}`} /><SummaryCard label="Valor" value={`R$ ${selected.price},00`} /></div>
-              <div className="mt-6 rounded-2xl p-5" style={{ backgroundColor: '#F8FAFC', border: '1px solid #DDE7EE' }}><p className="text-sm font-semibold" style={{ color: N }}>Pagamento em preparacao</p><p className="mt-2 text-sm" style={{ color: '#64748B' }}>Na proxima fase tecnica, conectaremos a cobranca real. O botao abaixo ja simula a confirmacao para continuar o fluxo.</p></div>
-              <StepActions backLabel="Voltar para documentos" nextLabel="Avancar para consulta" onBack={() => setActiveStep('documents')} onNext={() => setActiveStep('consultation')} />
+              <div className="mt-6 rounded-2xl p-5" style={{ backgroundColor: '#F8FAFC', border: '1px solid #DDE7EE' }}><p className="text-sm font-semibold" style={{ color: N }}>Pagamento em preparacao</p><p className="mt-2 text-sm" style={{ color: '#64748B' }}>O botao abaixo simula a confirmacao e gera o resumo da IA usando pre-triagem, toggles e documentos processados.</p></div>
+              <StepActions backLabel="Voltar para documentos" nextLabel="Gerar resumo e avancar" onBack={() => setActiveStep('documents')} onNext={prepareConsultationSummary} />
             </section>
           )}
 
           {activeStep === 'consultation' && (
             <section className="mt-8 rounded-2xl bg-white p-6 shadow-sm" style={{ border: '1px solid #E2E8F0' }}>
-              <div className="mb-6"><p className="text-xs font-semibold" style={{ color: T }}>{selected.label}</p><h2 className="mt-2 text-xl font-bold" style={{ color: N }}>Sala de consulta</h2><p className="mt-1 text-sm" style={{ color: '#64748B' }}>O paciente chegou ao ponto final do agendamento. Aqui vamos conectar fila, videochamada e painel do medico.</p></div>
-              <div className="grid gap-4 md:grid-cols-3"><SummaryCard label="Status" value="Aguardando medico" /><SummaryCard label="Pre-triagem" value="Registrada" /><SummaryCard label="IA" value="Resumo em preparo" /></div>
-              <div className="mt-6 rounded-2xl p-5" style={{ backgroundColor: '#F0FDF9', border: `1px solid ${T}30` }}><p className="text-sm font-semibold" style={{ color: N }}>Proxima fase</p><p className="mt-2 text-sm" style={{ color: '#64748B' }}>Criar a experiencia da consulta: sala de espera, chamada de video, historico do paciente e resumo da IA para o medico.</p></div>
-              <StepActions backLabel="Voltar para pagamento" nextLabel="Entrar na consulta" onBack={() => setActiveStep('payment')} onNext={() => undefined} />
+              <div className="mb-6"><p className="text-xs font-semibold" style={{ color: T }}>{selected.label}</p><h2 className="mt-2 text-xl font-bold" style={{ color: N }}>Sala de consulta</h2><p className="mt-1 text-sm" style={{ color: '#64748B' }}>O paciente chegou ao ponto final do agendamento. Aqui validamos o resumo que sera exibido ao medico.</p></div>
+              <div className="grid gap-4 md:grid-cols-3"><SummaryCard label="Status" value="Aguardando medico" /><SummaryCard label="Pre-triagem" value="Registrada" /><SummaryCard label="Documentos" value={`${documents.length} processado${documents.length === 1 ? '' : 's'}`} /></div>
+              <AiSummaryCard status={summaryStatus} summary={consultationSummary} error={summaryError} />
+              <StepActions backLabel="Voltar para pagamento" nextLabel="Entrar na consulta" onBack={() => setActiveStep('payment')} onNext={() => undefined} nextDisabled={summaryStatus === 'loading'} />
             </section>
           )}
         </div>
@@ -365,6 +451,48 @@ function SummaryCard({ label, value }: { label: string; value: string }) {
   return <div className="rounded-2xl p-5" style={{ backgroundColor: '#F8FAFC', border: '1px solid #DDE7EE' }}><p className="text-xs" style={{ color: '#64748B' }}>{label}</p><p className="mt-1 text-sm font-bold" style={{ color: N }}>{value}</p></div>
 }
 
+function AiSummaryCard({ status, summary, error }: { status: AiStatus; summary: string; error: string }) {
+  const parsed = parseSummary(summary)
+
+  return (
+    <div className="mt-6 rounded-2xl p-5" style={{ backgroundColor: '#F8FAFC', border: '1px solid #DDE7EE' }}>
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm font-semibold" style={{ color: N }}>Resumo da IA para apoio medico</p>
+          <p className="mt-1 text-xs" style={{ color: '#64748B' }}>Gerado a partir da pre-triagem, respostas objetivas e textos extraidos dos documentos.</p>
+        </div>
+        <span className="rounded-full px-3 py-1 text-xs font-semibold" style={{ backgroundColor: status === 'ready' ? '#E6FAF6' : '#EEF2F7', color: status === 'error' ? '#BE123C' : T }}>
+          {status === 'loading' ? 'Gerando...' : status === 'ready' ? 'Concluido' : status === 'error' ? 'Erro' : 'Aguardando'}
+        </span>
+      </div>
+
+      {status === 'loading' && <p className="mt-5 text-sm" style={{ color: '#64748B' }}>A IA esta organizando as informacoes para o medico.</p>}
+      {status === 'error' && <p className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</p>}
+      {status === 'ready' && parsed && (
+        <div className="mt-5 grid gap-4">
+          <SummarySection title="Queixa principal" value={parsed.queixa_principal} />
+          <SummaryList title="Pontos de atencao" values={parsed.pontos_de_atencao} />
+          <SummaryList title="Respostas objetivas" values={parsed.respostas_objetivas} />
+          <SummaryList title="Documentos resumidos" values={parsed.documentos_resumidos} />
+          <SummaryList title="Perguntas sugeridas para o medico" values={parsed.perguntas_sugeridas_para_o_medico} />
+          <SummarySection title="Limitacoes" value={parsed.limitacoes} />
+        </div>
+      )}
+      {status === 'ready' && !parsed && <pre className="mt-5 overflow-auto rounded-xl bg-white p-4 text-xs" style={{ color: '#475569' }}>{summary}</pre>}
+    </div>
+  )
+}
+
+function SummarySection({ title, value }: { title: string; value?: string }) {
+  if (!value) return null
+  return <div className="rounded-xl bg-white p-4" style={{ border: '1px solid #E2E8F0' }}><p className="text-xs font-semibold" style={{ color: T }}>{title}</p><p className="mt-2 text-sm leading-relaxed" style={{ color: '#475569' }}>{value}</p></div>
+}
+
+function SummaryList({ title, values }: { title: string; values?: string[] }) {
+  if (!values || values.length === 0) return null
+  return <div className="rounded-xl bg-white p-4" style={{ border: '1px solid #E2E8F0' }}><p className="text-xs font-semibold" style={{ color: T }}>{title}</p><ul className="mt-2 space-y-1 text-sm leading-relaxed" style={{ color: '#475569' }}>{values.map((value, index) => <li key={`${title}-${index}`}>- {value}</li>)}</ul></div>
+}
+
 function UploadIcon() {
   return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
 }
@@ -376,4 +504,29 @@ function documentTypeLabel(value: string) {
 function formatBytes(bytes: number) {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`
+}
+
+async function getApiError(response: Response) {
+  try {
+    const body = await response.json() as { message?: string | string[]; error?: string }
+    if (Array.isArray(body.message)) return body.message.join(' ')
+    return body.message ?? body.error ?? 'Erro ao chamar a API.'
+  } catch {
+    return 'Erro ao chamar a API.'
+  }
+}
+
+function parseSummary(summary: string) {
+  try {
+    return JSON.parse(summary) as {
+      queixa_principal?: string
+      pontos_de_atencao?: string[]
+      respostas_objetivas?: string[]
+      documentos_resumidos?: string[]
+      perguntas_sugeridas_para_o_medico?: string[]
+      limitacoes?: string
+    }
+  } catch {
+    return null
+  }
 }
