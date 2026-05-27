@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import logo from '../logo1.png'
 
 const T = '#17B890'   // teal primary
 const N = '#0A2342'   // navy dark
@@ -40,7 +41,7 @@ function Header() {
       <div className="mx-auto max-w-6xl flex items-center justify-between">
         {/* Logo */}
         <div className="flex items-center gap-2">
-          <Image src="/logo.png" alt="Medicare" width={36} height={36} priority />
+          <Image src={logo} alt="Medicare" width={36} height={36} priority />
           <span className="text-lg font-bold" style={{ color: N }}>Medicare</span>
         </div>
 
@@ -49,7 +50,7 @@ function Header() {
           <a href="#como-funciona" className="hover:text-slate-900 transition-colors">Como funciona</a>
           <a href="#especialidades" className="hover:text-slate-900 transition-colors">Especialidades</a>
           <a href="#medicos" className="hover:text-slate-900 transition-colors">Para médicos</a>
-          <a href="/sobre" className="hover:text-slate-900 transition-colors">Sobre nós</a>
+          <Link href="/sobre" className="hover:text-slate-900 transition-colors">Sobre nós</Link>
           <a href="#faq" className="hover:text-slate-900 transition-colors">Dúvidas</a>
         </nav>
 
@@ -278,7 +279,7 @@ function ForDoctors() {
             {/* Sidebar */}
             <div className="w-36 flex-shrink-0 py-4 px-3" style={{ backgroundColor: N, borderRight: '1px solid rgba(255,255,255,0.06)' }}>
               <div className="flex items-center gap-1.5 mb-5 px-1">
-                <Image src="/logo.png" alt="Medicare" width={22} height={22} />
+                <Image src={logo} alt="Medicare" width={22} height={22} />
                 <span className="text-white text-xs font-bold">Medicare</span>
               </div>
               <p className="text-xs mb-3 font-medium px-1" style={{ color: '#64748B' }}>Painel do médico</p>
@@ -411,7 +412,7 @@ function Footer() {
           <div className="col-span-2 md:col-span-1">
             <div className="flex items-center gap-2 mb-3">
               <div className="rounded-lg p-1 flex-shrink-0" style={{ backgroundColor: 'white' }}>
-                <Image src="/logo.png" alt="Medicare" width={26} height={26} />
+                <Image src={logo} alt="Medicare" width={26} height={26} />
               </div>
               <span className="text-white font-bold text-sm">Medicare</span>
             </div>
