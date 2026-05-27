@@ -65,6 +65,27 @@ export default function NovaConsultaPage() {
           </button>
         ))}
       </div>
+
+      {/* Não sei a especialidade */}
+      <button
+        className="mt-4 w-full flex items-center gap-4 rounded-xl border-2 p-4 text-left transition-all hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2"
+        style={{
+          borderColor: '#17B890',
+          backgroundColor: '#F0FDF9',
+          focusRingColor: '#17B890',
+        }}
+      >
+        <span className="text-3xl">🤔</span>
+        <div className="flex-1">
+          <p className="text-sm font-semibold" style={{ color: '#0A2342' }}>Não sei qual especialidade escolher</p>
+          <p className="text-xs mt-0.5" style={{ color: '#475569' }}>
+            Um médico de Clínica Geral irá avaliar seu caso e orientar o atendimento adequado.
+          </p>
+        </div>
+        <div className="text-xs font-semibold px-3 py-1 rounded-full" style={{ backgroundColor: '#17B890', color: 'white' }}>
+          R$ 120,00
+        </div>
+      </button>
     </div>
   )
 }
