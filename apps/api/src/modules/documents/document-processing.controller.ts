@@ -48,12 +48,16 @@ export class DocumentProcessingController {
   prepareConsultation(
     @Body()
     body: {
+      consultationId?: string
+      patientId?: string
+      doctorId?: string
       specialty: string
       symptoms: string
       symptomDuration?: string
       flags: Record<string, boolean>
       documentSummaries: string[]
       extractedTexts?: string[]
+      sourceDocumentSummaryIds?: string[]
     },
   ) {
     if (!body.symptoms || body.symptoms.trim().length < 50) {
