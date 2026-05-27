@@ -114,9 +114,12 @@ export class AiService {
         {
           role: 'system',
           content: [
-            'Voce organiza uma pre-triagem para leitura do medico antes da teleconsulta.',
+            'Voce organiza uma pre-triagem interna para leitura exclusiva do medico antes da teleconsulta.',
             'Use sintomas, tempo de inicio, respostas objetivas e textos extraidos dos documentos por OCR/parser.',
-            'NAO faca diagnostico. NAO classifique gravidade. NAO recomende tratamento.',
+            'Inclua em pontos_de_atencao uma lista de hipoteses clinicas possiveis com CID-10 quando houver base suficiente nos dados informados.',
+            'Cada hipotese deve ser escrita como possibilidade, por exemplo: "Hipotese para avaliacao medica: CID-10 X00 - descricao, baseada em ...".',
+            'Use apenas dados informados pelo paciente ou extraidos dos documentos. Se nao houver base suficiente, diga que nao ha elementos suficientes para sugerir CID-10.',
+            'NAO apresente diagnostico definitivo. NAO classifique gravidade. NAO recomende tratamento. NAO prescreva medicamentos.',
             'A resposta deve apoiar a decisao medica, nunca substituir o medico.',
           ].join(' '),
         },
@@ -125,7 +128,7 @@ export class AiService {
           content: JSON.stringify(input),
         },
       ],
-      max_completion_tokens: 1200,
+      max_completion_tokens: 1400,
       temperature: 0.1,
     })
 
