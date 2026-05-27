@@ -175,7 +175,7 @@ function LeftPanel() {
             <option>Todos</option>
           </select>
         </div>
-        <div className="divide-y" style={{ divideColor: '#F8FAFC' }}>
+        <div className="divide-y divide-slate-50">
           {queue.map((p, i) => (
             <div key={i} className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors ${i === 0 ? '' : 'hover:bg-slate-50'}`}
               style={{ backgroundColor: i === 0 ? '#F0FDF9' : undefined }}>
@@ -206,7 +206,7 @@ function LeftPanel() {
         <div className="px-4 py-3" style={{ borderBottom: '1px solid #F1F5F9' }}>
           <h2 className="text-sm font-semibold" style={{ color: N }}>Próximos horários</h2>
         </div>
-        <div className="divide-y" style={{ divideColor: '#F8FAFC' }}>
+        <div className="divide-y divide-slate-50">
           {schedule.map((s, i) => (
             <div key={i} className="flex items-center gap-3 px-4 py-3">
               <span className="text-xs font-mono font-semibold w-10 flex-shrink-0" style={{ color: T }}>{s.time}</span>
