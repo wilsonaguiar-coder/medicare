@@ -1,9 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, lazy, Suspense } from 'react'
 import type { ReactNode } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+
+const VideoRoom = lazy(() => import('./VideoRoom').then((m) => ({ default: m.VideoRoom })))
 
 type FlowStep = 'identification' | 'specialty' | 'triage' | 'documents' | 'payment' | 'consultation'
 type PendingDocument = { id: string; name: string; size: number; file: File }
@@ -82,6 +84,12 @@ export default function NovaConsultaPage() {
   const [consultationSummary, setConsultationSummary] = useState('')
   const [summaryStatus, setSummaryStatus] = useState<AiStatus>('idle')
   const [summaryError, setSummaryError] = useState('')
+
+  // Video call
+  const [videoToken, setVideoToken] = useState<string | null>(null)
+  const [videoServerUrl, setVideoServerUrl] = useState<string | null>(null)
+  const [videoLoading, setVideoLoading] = useState(false)
+  const [videoError, setVideoError] = useState<string | null>(null)
 
   // AI specialty suggestion
   const [showAiPanel, setShowAiPanel] = useState(false)
@@ -177,6 +185,29 @@ export default function NovaConsultaPage() {
       setDocumentError(error instanceof Error ? error.message : 'Nao foi possivel processar o documento.')
     } finally {
       setDocumentProcessing(false)
+    }
+  }
+
+  async function handleEnterCall() {
+    if (videoLoading) return
+    setVideoLoading(true)
+    setVideoError(null)
+    try {
+      const roomName = `consulta-${selected.key.toLowerCase()}-${Date.now()}`
+      const participantName = patientName.trim() || email || 'Paciente'
+      const res = await fetch(`${API_BASE}/video/token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roomName, participantName }),
+      })
+      if (!res.ok) throw new Error('Nao foi possivel obter o token de video.')
+      const data = await res.json() as { token: string; serverUrl: string }
+      setVideoToken(data.token)
+      setVideoServerUrl(data.serverUrl)
+    } catch (err) {
+      setVideoError(err instanceof Error ? err.message : 'Erro ao iniciar video.')
+    } finally {
+      setVideoLoading(false)
     }
   }
 
@@ -458,11 +489,43 @@ export default function NovaConsultaPage() {
 
           {/* ── CONSULTA ── */}
           {activeStep === 'consultation' && (
-            <section className="mt-8 rounded-2xl bg-white p-6 shadow-sm" style={{ border: '1px solid #E2E8F0' }}>
-              <div className="mb-6"><p className="text-xs font-semibold" style={{ color: T }}>{selected.label}</p><h2 className="mt-2 text-xl font-bold" style={{ color: N }}>Sala de consulta</h2><p className="mt-1 text-sm" style={{ color: '#64748B' }}>O paciente chegou ao ponto final do agendamento. Aqui validamos o resumo que sera exibido ao medico.</p></div>
-              <div className="grid gap-4 md:grid-cols-3"><SummaryCard label="Status" value="Aguardando medico" /><SummaryCard label="Pre-triagem" value="Registrada" /><SummaryCard label="Documentos" value={`${documents.length} processado${documents.length === 1 ? '' : 's'}`} /></div>
-              <AiSummaryCard status={summaryStatus} summary={consultationSummary} error={summaryError} />
-              <StepActions backLabel="Voltar para pagamento" nextLabel="Entrar na consulta" onBack={() => setActiveStep('payment')} onNext={() => undefined} nextDisabled={summaryStatus === 'loading'} />
+            <section className="mt-8 space-y-4">
+              {!videoToken ? (
+                <div className="rounded-2xl bg-white p-6 shadow-sm" style={{ border: '1px solid #E2E8F0' }}>
+                  <div className="mb-6"><p className="text-xs font-semibold" style={{ color: T }}>{selected.label}</p><h2 className="mt-2 text-xl font-bold" style={{ color: N }}>Sala de consulta</h2><p className="mt-1 text-sm" style={{ color: '#64748B' }}>Resumo enviado ao medico. Quando estiver pronto, clique em Entrar na consulta para iniciar a videochamada.</p></div>
+                  <div className="grid gap-4 md:grid-cols-3"><SummaryCard label="Status" value="Aguardando medico" /><SummaryCard label="Pre-triagem" value="Registrada" /><SummaryCard label="Documentos" value={`${documents.length} processado${documents.length === 1 ? '' : 's'}`} /></div>
+                  <AiSummaryCard status={summaryStatus} summary={consultationSummary} error={summaryError} />
+                  {videoError && (
+                    <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{videoError}</div>
+                  )}
+                  <div className="mt-6 flex flex-col-reverse gap-3 border-t pt-5 sm:flex-row sm:items-center sm:justify-between" style={{ borderColor: '#DDE7EE' }}>
+                    <button type="button" onClick={() => setActiveStep('payment')} className="rounded-xl px-5 py-3 text-sm font-semibold transition-all hover:bg-slate-50" style={{ border: '1px solid #DDE7EE', color: N }}>Voltar para pagamento</button>
+                    <button type="button" onClick={handleEnterCall} disabled={summaryStatus === 'loading' || videoLoading}
+                      className="flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold text-white transition-all disabled:cursor-not-allowed disabled:opacity-50"
+                      style={{ backgroundColor: T, boxShadow: `0 4px 16px ${T}35` }}>
+                      {videoLoading ? <><SpinnerIcon /> Conectando...</> : <>📹 Entrar na consulta</>}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-2xl bg-white p-4 shadow-sm" style={{ border: '1px solid #E2E8F0' }}>
+                  <div className="mb-4 flex items-center justify-between">
+                    <div><p className="text-xs font-semibold" style={{ color: T }}>{selected.label}</p><h2 className="text-lg font-bold" style={{ color: N }}>Consulta em andamento</h2></div>
+                    <button type="button" onClick={() => { setVideoToken(null); setVideoServerUrl(null) }}
+                      className="rounded-lg px-3 py-2 text-xs font-semibold transition-all hover:bg-red-50"
+                      style={{ border: '1px solid #FCA5A5', color: '#DC2626' }}>
+                      Encerrar consulta
+                    </button>
+                  </div>
+                  <Suspense fallback={<div className="flex h-60 items-center justify-center rounded-2xl text-sm" style={{ backgroundColor: '#0A2342', color: 'white' }}>Carregando sala de video...</div>}>
+                    <VideoRoom
+                      token={videoToken}
+                      serverUrl={videoServerUrl!}
+                      onDisconnect={() => { setVideoToken(null); setVideoServerUrl(null) }}
+                    />
+                  </Suspense>
+                </div>
+              )}
             </section>
           )}
         </div>

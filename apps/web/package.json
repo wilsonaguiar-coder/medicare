@@ -10,18 +10,21 @@
     "clean": "rm -rf .next dist"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.0.1",
+    "@livekit/components-react": "^2.9.21",
+    "@livekit/components-styles": "^1.2.0",
     "@medicare/types": "workspace:*",
     "@medicare/ui": "workspace:*",
+    "axios": "^1.9.0",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
+    "livekit-client": "^2.19.0",
     "next": "^15.3.2",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-hook-form": "^7.56.4",
     "zod": "^3.25.28",
-    "@hookform/resolvers": "^5.0.1",
-    "axios": "^1.9.0",
-    "zustand": "^5.0.5",
-    "date-fns": "^4.1.0",
-    "clsx": "^2.1.1"
+    "zustand": "^5.0.5"
   },
   "devDependencies": {
     "@medicare/tsconfig": "workspace:*",
