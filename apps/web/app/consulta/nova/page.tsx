@@ -13,6 +13,7 @@ const SPECIALTIES = [
   { key: 'NEUROLOGY', label: 'Neurologia', icon: '⚡', price: 160 },
   { key: 'ENDOCRINOLOGY', label: 'Endocrinologia', icon: '⚗️', price: 150 },
   { key: 'GASTROENTEROLOGY', label: 'Gastroenterologia', icon: '🫁', price: 150 },
+  { key: 'OTORHINOLARYNGOLOGY', label: 'Otorrinolaringologia', icon: '👂', price: 150 },
 ]
 
 export default function NovaConsultaPage() {
