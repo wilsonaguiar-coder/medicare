@@ -1,90 +1,453 @@
-import type { Metadata } from 'next'
+'use client'
 
-export const metadata: Metadata = { title: 'Painel do Médico' }
+import { useState } from 'react'
+import Image from 'next/image'
+
+const N = '#0A2342'
+const T = '#17B890'
 
 export default function PainelMedicoPage() {
+  const [activeTab, setActiveTab] = useState('anotacoes')
+
   return (
-    <div className="mx-auto max-w-4xl px-4 py-10">
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dr. Carlos Lima</h1>
-          <p className="text-gray-600">Dermatologia · CRM 12345/SP</p>
+    <div className="flex h-screen overflow-hidden"
+      style={{ backgroundColor: '#F1F5F9', fontFamily: "'Inter', system-ui, sans-serif" }}>
+      <Sidebar />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Header />
+        <main className="flex-1 flex overflow-hidden gap-4 p-4">
+          <LeftPanel />
+          <CenterPanel activeTab={activeTab} setActiveTab={setActiveTab} />
+          <RightPanel />
+        </main>
+      </div>
+    </div>
+  )
+}
+
+/* ── SIDEBAR ── */
+function Sidebar() {
+  const navItems = [
+    { label: 'Início',        icon: <IconHome />,     badge: 0,  active: false },
+    { label: 'Atendimentos',  icon: <IconStethoscope />, badge: 3, active: true  },
+    { label: 'Agenda',        icon: <IconCalendar />, badge: 0,  active: false },
+    { label: 'Pacientes',     icon: <IconUsers />,    badge: 0,  active: false },
+    { label: 'Mensagens',     icon: <IconChat />,     badge: 2,  active: false },
+    { label: 'Financeiro',    icon: <IconChart />,    badge: 0,  active: false },
+    { label: 'Relatórios',    icon: <IconDoc />,      badge: 0,  active: false },
+    { label: 'Configurações', icon: <IconSettings />, badge: 0,  active: false },
+  ]
+
+  return (
+    <aside className="flex flex-col flex-shrink-0"
+      style={{ width: 220, backgroundColor: N, color: 'white' }}>
+
+      {/* Logo */}
+      <div className="flex items-center gap-2.5 px-5 py-5" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+        <div className="rounded-lg p-1 flex-shrink-0" style={{ backgroundColor: 'white' }}>
+          <Image src="/logo.png" alt="Medicare" width={26} height={26} />
         </div>
-        <div className="flex items-center gap-3">
-          <span className="rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-700">
-            Disponível
-          </span>
-          <button className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50">
-            Ficar Offline
+        <span className="font-bold text-base">Medicare</span>
+      </div>
+
+      {/* Label */}
+      <p className="px-5 pt-5 pb-2 text-xs font-semibold uppercase tracking-widest"
+        style={{ color: 'rgba(255,255,255,0.35)' }}>Painel do médico</p>
+
+      {/* Nav */}
+      <nav className="flex-1 px-3 space-y-0.5">
+        {navItems.map(item => (
+          <button key={item.label}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-left transition-all"
+            style={{
+              backgroundColor: item.active ? `${T}20` : 'transparent',
+              color: item.active ? T : 'rgba(255,255,255,0.6)',
+              fontWeight: item.active ? 600 : 400,
+            }}>
+            <span style={{ color: item.active ? T : 'rgba(255,255,255,0.4)' }}>{item.icon}</span>
+            <span className="flex-1">{item.label}</span>
+            {item.badge > 0 && (
+              <span className="text-xs font-bold rounded-full px-1.5 py-0.5 min-w-[20px] text-center"
+                style={{ backgroundColor: T, color: 'white', fontSize: 10 }}>
+                {item.badge}
+              </span>
+            )}
           </button>
-        </div>
-      </div>
-
-      {/* Cards financeiros */}
-      <div className="mb-8 grid grid-cols-3 gap-4">
-        {[
-          { label: 'Consultas este mês', value: '18' },
-          { label: 'Receita bruta', value: 'R$ 2.160' },
-          { label: 'Repasse líquido', value: 'R$ 1.728' },
-        ].map((item) => (
-          <div key={item.label} className="rounded-xl border border-gray-200 bg-white p-4">
-            <p className="text-xs text-gray-500">{item.label}</p>
-            <p className="mt-1 text-2xl font-bold text-gray-900">{item.value}</p>
-          </div>
         ))}
-      </div>
+      </nav>
 
-      {/* Chamada aguardando */}
-      <div className="mb-6 rounded-xl border border-blue-200 bg-blue-50 p-5">
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-blue-600">
-              Novo Chamado — Psiquiatria
-            </p>
-            <p className="mt-1 text-lg font-semibold text-gray-900">Maria Fernanda, 34 anos</p>
-            <p className="mt-1 text-sm text-gray-600">
-              Queixa: Ansiedade e insônia há 3 semanas. Sem medicamentos em uso.
-            </p>
-            <p className="mt-2 text-xs text-gray-500">3 documentos enviados · Resumo IA disponível</p>
-          </div>
-          <div className="flex flex-col gap-2">
-            <button className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
-              Aceitar (58s)
-            </button>
-            <button className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50">
-              Recusar
-            </button>
-          </div>
+      {/* Doctor profile */}
+      <div className="px-4 py-4 mx-3 mb-4 rounded-xl flex items-center gap-3"
+        style={{ backgroundColor: 'rgba(255,255,255,0.06)' }}>
+        <div className="h-9 w-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
+          style={{ background: `linear-gradient(135deg, #1a6bb5, ${T})`, color: 'white' }}>
+          GN
+        </div>
+        <div className="min-w-0">
+          <p className="text-xs font-semibold text-white truncate">Dr. Gabriel Nascimento</p>
+          <p className="text-xs truncate" style={{ color: 'rgba(255,255,255,0.4)' }}>CRM 123456-SP</p>
         </div>
       </div>
+    </aside>
+  )
+}
 
-      {/* Histórico */}
-      <div className="rounded-xl border border-gray-200 bg-white">
-        <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
-          <h2 className="font-semibold text-gray-900">Consultas Recentes</h2>
-          <button className="text-sm text-blue-600 hover:underline">Relatório mensal</button>
+/* ── HEADER ── */
+function Header() {
+  return (
+    <header className="flex items-center justify-between px-6 py-3 bg-white flex-shrink-0"
+      style={{ borderBottom: '1px solid #E2E8F0' }}>
+      <h1 className="text-lg font-bold" style={{ color: N }}>Atendimentos</h1>
+      <div className="flex items-center gap-3">
+        <button className="relative p-2 rounded-lg hover:bg-slate-50">
+          <IconBell />
+          <span className="absolute top-1 right-1 h-2 w-2 rounded-full" style={{ backgroundColor: T }} />
+        </button>
+        <button className="relative p-2 rounded-lg hover:bg-slate-50">
+          <IconBell />
+        </button>
+        <div className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold text-white"
+          style={{ background: `linear-gradient(135deg, #1a6bb5, ${T})` }}>
+          GN
         </div>
-        <div className="divide-y divide-gray-50">
-          {CONSULTAS_MOCK.map((c) => (
-            <div key={c.id} className="flex items-center justify-between px-6 py-4">
-              <div>
-                <p className="text-sm font-medium text-gray-900">{c.patient}</p>
-                <p className="text-xs text-gray-500">{c.date} · {c.specialty}</p>
+      </div>
+    </header>
+  )
+}
+
+/* ── LEFT PANEL ── */
+function LeftPanel() {
+  const queue = [
+    { name: 'Ana Clara Silva',   age: '24 anos', time: '09:30', status: 'Em andamento', statusColor: T,         initials: 'AC', color: '#7C3AED' },
+    { name: 'João Pedro Costa',  age: '32 anos', time: '10:00', status: 'Aguardando',   statusColor: '#F59E0B', initials: 'JP', color: '#0369A1' },
+    { name: 'Mariana Oliveira',  age: '28 anos', time: '10:30', status: 'Aguardando',   statusColor: '#F59E0B', initials: 'MO', color: '#BE185D' },
+  ]
+  const schedule = [
+    { time: '11:00', name: 'Carlos Eduardo' },
+    { time: '11:30', name: 'Fernanda Lima'  },
+    { time: '12:00', name: 'Rafael Mendes'  },
+  ]
+
+  return (
+    <div className="flex flex-col gap-4 flex-shrink-0" style={{ width: 256 }}>
+      {/* Queue */}
+      <div className="bg-white rounded-2xl overflow-hidden flex flex-col" style={{ border: '1px solid #E2E8F0' }}>
+        <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid #F1F5F9' }}>
+          <h2 className="text-sm font-semibold" style={{ color: N }}>Fila de atendimentos</h2>
+          <select className="text-xs rounded-lg px-2 py-1 outline-none"
+            style={{ border: '1px solid #E2E8F0', color: '#64748B' }}>
+            <option>Todos</option>
+          </select>
+        </div>
+        <div className="divide-y" style={{ divideColor: '#F8FAFC' }}>
+          {queue.map((p, i) => (
+            <div key={i} className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors ${i === 0 ? '' : 'hover:bg-slate-50'}`}
+              style={{ backgroundColor: i === 0 ? '#F0FDF9' : undefined }}>
+              <div className="h-9 w-9 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+                style={{ backgroundColor: p.color }}>
+                {p.initials}
               </div>
-              <div className="text-right">
-                <p className="text-sm font-medium text-gray-900">R$ {c.amount}</p>
-                <p className="text-xs text-gray-500">Repasse: R$ {c.repasse}</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold truncate" style={{ color: N }}>{p.name}</p>
+                <p className="text-xs" style={{ color: '#94A3B8' }}>{p.age} · {p.time}</p>
+                <span className="inline-block mt-0.5 text-xs font-medium px-1.5 py-0.5 rounded-full"
+                  style={{ backgroundColor: `${p.statusColor}15`, color: p.statusColor, fontSize: 10 }}>
+                  {p.status}
+                </span>
               </div>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" strokeWidth="2"><polyline points="9 18 15 12 9 6" /></svg>
             </div>
           ))}
+        </div>
+        <button className="py-3 text-xs font-semibold text-center hover:bg-slate-50 transition-colors"
+          style={{ color: T, borderTop: '1px solid #F1F5F9' }}>
+          Ver todos
+        </button>
+      </div>
+
+      {/* Schedule */}
+      <div className="bg-white rounded-2xl overflow-hidden" style={{ border: '1px solid #E2E8F0' }}>
+        <div className="px-4 py-3" style={{ borderBottom: '1px solid #F1F5F9' }}>
+          <h2 className="text-sm font-semibold" style={{ color: N }}>Próximos horários</h2>
+        </div>
+        <div className="divide-y" style={{ divideColor: '#F8FAFC' }}>
+          {schedule.map((s, i) => (
+            <div key={i} className="flex items-center gap-3 px-4 py-3">
+              <span className="text-xs font-mono font-semibold w-10 flex-shrink-0" style={{ color: T }}>{s.time}</span>
+              <span className="text-xs" style={{ color: '#475569' }}>{s.name}</span>
+            </div>
+          ))}
+        </div>
+        <button className="w-full py-3 text-xs font-semibold text-center hover:bg-slate-50 transition-colors"
+          style={{ color: T, borderTop: '1px solid #F1F5F9' }}>
+          Ver agenda completa
+        </button>
+      </div>
+    </div>
+  )
+}
+
+/* ── CENTER PANEL ── */
+function CenterPanel({ activeTab, setActiveTab }: { activeTab: string; setActiveTab: (t: string) => void }) {
+  const tabs = [
+    { key: 'anotacoes',  label: 'Anotações'          },
+    { key: 'prescricao', label: 'Prescrição'          },
+    { key: 'atestado',   label: 'Atestado'            },
+    { key: 'exame',      label: 'Solicitação de exame'},
+  ]
+
+  return (
+    <div className="flex-1 flex flex-col gap-4 min-w-0">
+      {/* Video card */}
+      <div className="bg-white rounded-2xl overflow-hidden flex flex-col" style={{ border: '1px solid #E2E8F0', flex: '1 1 0' }}>
+        {/* Video header */}
+        <div className="flex items-center justify-between px-4 py-3 flex-shrink-0" style={{ borderBottom: '1px solid #F1F5F9' }}>
+          <div className="flex items-center gap-3">
+            <h2 className="text-sm font-semibold" style={{ color: N }}>Consulta em andamento</h2>
+            <span className="text-sm font-mono font-semibold" style={{ color: T }}>24:18</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <IconBtn><IconCamSettings /></IconBtn>
+            <IconBtn><IconFullscreen /></IconBtn>
+            <IconBtn><IconGrid /></IconBtn>
+            <button className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-semibold text-white"
+              style={{ backgroundColor: '#EF4444' }}>
+              Encerrar
+            </button>
+          </div>
+        </div>
+
+        {/* Video area */}
+        <div className="relative flex-1 min-h-0" style={{ background: 'linear-gradient(160deg, #1a2f4a 0%, #0f1e35 100%)' }}>
+          {/* Patient main video */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="relative" style={{ width: '100%', height: '100%' }}>
+              {/* Simulated patient face — gradient + silhouette */}
+              <div className="absolute inset-0 flex items-center justify-center"
+                style={{ background: 'linear-gradient(180deg, #1e3a5f 0%, #0f2840 100%)' }}>
+                <div className="flex flex-col items-center gap-3">
+                  <div className="rounded-full flex items-center justify-center"
+                    style={{ width: 100, height: 100, background: 'linear-gradient(135deg, #7C3AED 0%, #4f46e5 100%)' }}>
+                    <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.4">
+                      <circle cx="12" cy="8" r="4" />
+                      <path d="M6 20v-1a6 6 0 0 1 12 0v1" />
+                    </svg>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-white text-sm font-medium">Ana Clara Silva</p>
+                    <div className="flex items-center justify-center gap-1.5 mt-1">
+                      <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                      <span className="text-emerald-400 text-xs">Conectada</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Doctor thumbnail */}
+          <div className="absolute bottom-3 right-3 rounded-xl overflow-hidden flex items-center justify-center"
+            style={{ width: 80, height: 96, background: 'linear-gradient(135deg, #164e63, #0e7490)', border: `2px solid ${T}` }}>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.4">
+              <circle cx="12" cy="8" r="4" />
+              <path d="M6 20v-1a6 6 0 0 1 12 0v1" />
+            </svg>
+          </div>
+
+          {/* Call controls */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-3">
+            {[
+              { icon: <IconMic />,      bg: 'rgba(255,255,255,0.15)' },
+              { icon: <IconCam />,      bg: 'rgba(255,255,255,0.15)' },
+              { icon: <IconChatSm />,   bg: 'rgba(255,255,255,0.15)' },
+              { icon: <IconDocSm />,    bg: 'rgba(255,255,255,0.15)' },
+              { icon: <IconExpand />,   bg: 'rgba(255,255,255,0.15)' },
+              { icon: <IconPhone />,    bg: '#EF4444' },
+            ].map((c, i) => (
+              <button key={i} className="h-10 w-10 rounded-full flex items-center justify-center transition-opacity hover:opacity-80"
+                style={{ backgroundColor: c.bg }}>
+                {c.icon}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Notes tabs */}
+        <div className="flex-shrink-0" style={{ borderTop: '1px solid #F1F5F9' }}>
+          <div className="flex" style={{ borderBottom: '1px solid #F1F5F9' }}>
+            {tabs.map(tab => (
+              <button key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className="px-4 py-2.5 text-xs font-medium transition-colors relative"
+                style={{ color: activeTab === tab.key ? T : '#94A3B8' }}>
+                {tab.label}
+                {activeTab === tab.key && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full" style={{ backgroundColor: T }} />
+                )}
+              </button>
+            ))}
+          </div>
+          <div className="px-4 py-3 text-xs leading-relaxed" style={{ color: '#475569', maxHeight: 110, overflowY: 'auto' }}>
+            <p className="font-semibold mb-1" style={{ color: N }}>Anamnese</p>
+            <p className="mb-2">Paciente relata dor de cabeça recorrente há 3 semanas, intensificando à noite, associada a cansaço e dificuldade para dormir.</p>
+            <p className="font-semibold mb-1" style={{ color: N }}>Conduta</p>
+            <p>Solicitado exames laboratoriais. Orientado retorno com resultados.</p>
+          </div>
         </div>
       </div>
     </div>
   )
 }
 
-const CONSULTAS_MOCK = [
-  { id: '1', patient: 'João Silva', specialty: 'Dermatologia', date: '25/05/2026', amount: '120,00', repasse: '96,00' },
-  { id: '2', patient: 'Ana Souza', specialty: 'Dermatologia', date: '24/05/2026', amount: '120,00', repasse: '96,00' },
-  { id: '3', patient: 'Pedro Costa', specialty: 'Dermatologia', date: '22/05/2026', amount: '120,00', repasse: '96,00' },
-]
+/* ── RIGHT PANEL ── */
+function RightPanel() {
+  const docs = [
+    { name: 'Exame de Sangue', size: 'PDF · 1,2 MB' },
+    { name: 'Vitamina D',      size: 'PDF · 430 KB' },
+    { name: 'Receita Anterior',size: 'PDF · 250 KB' },
+  ]
+
+  return (
+    <div className="flex flex-col gap-4 flex-shrink-0 overflow-y-auto" style={{ width: 280 }}>
+      {/* AI Summary */}
+      <div className="bg-white rounded-2xl p-4" style={{ border: '1px solid #E2E8F0' }}>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <div className="h-5 w-5 rounded flex items-center justify-center flex-shrink-0"
+              style={{ background: `linear-gradient(135deg, #7C3AED, ${T})` }}>
+              <span style={{ color: 'white', fontSize: 9 }}>✦</span>
+            </div>
+            <p className="text-xs font-semibold" style={{ color: N }}>Resumo inteligente (IA)</p>
+          </div>
+          <button className="text-slate-400 hover:text-slate-600 text-xs leading-none">✕</button>
+        </div>
+
+        <p className="text-xs mb-2" style={{ color: '#64748B' }}>Com base nos documentos enviados, a IA identificou os seguintes pontos relevantes:</p>
+
+        <ul className="space-y-1.5 mb-3">
+          {[
+            'Hemograma normal',
+            'Glicemia em jejum: 92 mg/dL',
+            'Vitamina D: 28 ng/mL (abaixo do ideal)',
+            'Colesterol total: 178 mg/dL',
+            'Função renal normal',
+          ].map(item => (
+            <li key={item} className="flex items-start gap-2 text-xs" style={{ color: '#475569' }}>
+              <span className="mt-0.5 flex-shrink-0 font-bold" style={{ color: T }}>✓</span>
+              {item}
+            </li>
+          ))}
+        </ul>
+
+        <div className="rounded-xl p-3 mb-3" style={{ backgroundColor: '#F8FFFE', border: `1px solid ${T}25` }}>
+          <p className="text-xs font-semibold mb-1" style={{ color: N }}>Sugestão da IA</p>
+          <p className="text-xs leading-relaxed" style={{ color: '#475569' }}>
+            Investigar causas de cefaleia associada à fadiga. Avaliar rotina de sono e níveis de vitamina D.
+          </p>
+        </div>
+
+        <p className="text-xs" style={{ color: '#94A3B8' }}>✦ Gerado por IA · 1 min atrás</p>
+      </div>
+
+      {/* Documents */}
+      <div className="bg-white rounded-2xl overflow-hidden" style={{ border: '1px solid #E2E8F0' }}>
+        <div className="px-4 py-3" style={{ borderBottom: '1px solid #F1F5F9' }}>
+          <p className="text-xs font-semibold" style={{ color: N }}>Documentos do paciente</p>
+        </div>
+        <div className="divide-y">
+          {docs.map(doc => (
+            <div key={doc.name} className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 cursor-pointer transition-colors">
+              <div className="h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                style={{ backgroundColor: '#FEF3C7' }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium truncate" style={{ color: N }}>{doc.name}</p>
+                <p className="text-xs" style={{ color: '#94A3B8' }}>{doc.size}</p>
+              </div>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" strokeWidth="2"><polyline points="9 18 15 12 9 6" /></svg>
+            </div>
+          ))}
+        </div>
+        <button className="w-full py-3 text-xs font-semibold text-center transition-colors hover:opacity-90"
+          style={{ backgroundColor: T, color: 'white' }}>
+          Ver todos os documentos
+        </button>
+      </div>
+    </div>
+  )
+}
+
+/* ── ICON HELPERS ── */
+function IconBtn({ children }: { children: React.ReactNode }) {
+  return (
+    <button className="p-1.5 rounded-lg hover:bg-slate-50 transition-colors" style={{ color: '#94A3B8' }}>
+      {children}
+    </button>
+  )
+}
+
+const Ico = ({ d, size = 16 }: { d: string; size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d={d} />
+  </svg>
+)
+
+const IconHome = () => <Ico d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10" size={15} />
+const IconStethoscope = () => <Ico d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3 M8 15v1a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6v-4" size={15} />
+const IconCalendar = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+  </svg>
+)
+const IconUsers = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
+  </svg>
+)
+const IconChat = () => <Ico d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" size={15} />
+const IconChart = () => <Ico d="M18 20V10 M12 20V4 M6 20v-6" size={15} />
+const IconDoc = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" />
+  </svg>
+)
+const IconSettings = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+  </svg>
+)
+const IconBell = () => <Ico d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9 M13.73 21a2 2 0 0 1-3.46 0" size={18} />
+const IconCamSettings = () => <Ico d="M12 20h9 M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" size={15} />
+const IconFullscreen = () => <Ico d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" size={15} />
+const IconGrid = () => <Ico d="M3 3h7v7H3z M14 3h7v7h-7z M14 14h7v7h-7z M3 14h7v7H3z" size={15} />
+const IconMic = () => <Ico d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z M19 10v2a7 7 0 0 1-14 0v-2 M12 19v4 M8 23h8" size={16} />
+const IconCam = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" />
+  </svg>
+)
+const IconChatSm = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+  </svg>
+)
+const IconDocSm = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" />
+  </svg>
+)
+const IconExpand = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+  </svg>
+)
+const IconPhone = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.42 19.42 0 0 1 3.07 8.63 2 2 0 0 1 5 6.44h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 14.9" />
+    <line x1="23" y1="1" x2="1" y2="23" />
+  </svg>
+)
