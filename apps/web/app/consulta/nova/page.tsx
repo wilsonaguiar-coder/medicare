@@ -44,7 +44,12 @@ export default function NovaConsultaPage() {
   const [selectedSpecialty, setSelectedSpecialty] = useState(SPECIALTIES[0].key)
   const [symptoms, setSymptoms] = useState('')
   const [duration, setDuration] = useState('Hoje')
-  const [severity, setSeverity] = useState(3)
+  const [hasFever, setHasFever] = useState(false)
+  const [hasPain, setHasPain] = useState(false)
+  const [hasShortnessOfBreath, setHasShortnessOfBreath] = useState(false)
+  const [hasAllergy, setHasAllergy] = useState(false)
+  const [usesMedication, setUsesMedication] = useState(false)
+  const [isPregnant, setIsPregnant] = useState(false)
 
   const selected = SPECIALTIES.find((specialty) => specialty.key === selectedSpecialty) ?? SPECIALTIES[0]
   const canCreateAccount =
@@ -290,26 +295,25 @@ export default function NovaConsultaPage() {
                   </p>
                 </Field>
 
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="Quando começou?">
-                    <select value={duration} onChange={(event) => setDuration(event.target.value)} className="input-field">
-                      <option>Hoje</option>
-                      <option>2 a 3 dias</option>
-                      <option>4 a 7 dias</option>
-                      <option>Mais de uma semana</option>
-                    </select>
-                  </Field>
+                <Field label="Quando começou?">
+                  <select value={duration} onChange={(event) => setDuration(event.target.value)} className="input-field">
+                    <option>Hoje</option>
+                    <option>2 a 3 dias</option>
+                    <option>4 a 7 dias</option>
+                    <option>Mais de uma semana</option>
+                  </select>
+                </Field>
 
-                  <Field label={`Intensidade: ${severity}/5`}>
-                    <input
-                      type="range"
-                      min="1"
-                      max="5"
-                      value={severity}
-                      onChange={(event) => setSeverity(Number(event.target.value))}
-                      className="w-full accent-[#17B890]"
-                    />
-                  </Field>
+                <div>
+                  <p className="mb-3 text-sm font-semibold" style={{ color: N }}>Alguma destas situações se aplica?</p>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <Toggle checked={hasFever} label="Tem febre?" onChange={setHasFever} />
+                    <Toggle checked={hasPain} label="Tem dor?" onChange={setHasPain} />
+                    <Toggle checked={hasShortnessOfBreath} label="Tem falta de ar?" onChange={setHasShortnessOfBreath} />
+                    <Toggle checked={hasAllergy} label="Tem alergias?" onChange={setHasAllergy} />
+                    <Toggle checked={usesMedication} label="Usa medicamento contínuo?" onChange={setUsesMedication} />
+                    <Toggle checked={isPregnant} label="Está grávida ou há suspeita?" onChange={setIsPregnant} />
+                  </div>
                 </div>
               </div>
 
@@ -388,5 +392,24 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
       <span className="mb-1.5 block text-sm font-semibold" style={{ color: N }}>{label}</span>
       {children}
     </label>
+  )
+}
+
+function Toggle({ checked, label, onChange }: { checked: boolean; label: string; onChange: (value: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(!checked)}
+      className="flex items-center justify-between gap-4 rounded-xl p-4 text-left transition-all"
+      style={{ border: `1px solid ${checked ? T : '#DDE7EE'}`, backgroundColor: checked ? '#F0FDF9' : 'white' }}
+    >
+      <span className="text-sm font-medium" style={{ color: N }}>{label}</span>
+      <span
+        className="flex h-6 w-11 flex-shrink-0 items-center rounded-full p-0.5 transition-all"
+        style={{ backgroundColor: checked ? T : '#CBD5E1' }}
+      >
+        <span className="h-5 w-5 rounded-full bg-white transition-all" style={{ transform: checked ? 'translateX(20px)' : 'translateX(0)' }} />
+      </span>
+    </button>
   )
 }
