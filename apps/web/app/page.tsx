@@ -8,6 +8,15 @@ import logo from '../logo1.png'
 const T = '#17B890'   // teal primary
 const N = '#0A2342'   // navy dark
 const BG = '#FFFFFF'
+const SOFT_BG = {
+  backgroundColor: '#F7FBFA',
+  backgroundImage: `
+    linear-gradient(135deg, rgba(23, 184, 144, 0.10) 0%, rgba(255, 255, 255, 0) 42%),
+    linear-gradient(90deg, rgba(10, 35, 66, 0.035) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(10, 35, 66, 0.035) 1px, transparent 1px)
+  `,
+  backgroundSize: 'auto, 48px 48px, 48px 48px',
+}
 
 export default function HomePage() {
   return (
@@ -69,8 +78,9 @@ function Header() {
 /* ─── HERO ─── */
 function Hero() {
   return (
-    <section className="px-6 py-16 lg:py-24 overflow-hidden" style={{ backgroundColor: '#F8FFFE' }}>
-      <div className="mx-auto max-w-6xl flex flex-col lg:flex-row gap-10 lg:gap-8 items-center">
+    <section className="relative px-6 py-16 lg:py-24 overflow-hidden" style={SOFT_BG}>
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-transparent to-white" />
+      <div className="relative mx-auto max-w-6xl flex flex-col lg:flex-row gap-10 lg:gap-8 items-center">
 
         {/* Left — text */}
         <div className="flex-1 min-w-0">
