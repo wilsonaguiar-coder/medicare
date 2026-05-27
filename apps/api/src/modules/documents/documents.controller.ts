@@ -15,7 +15,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator'
 import { DocumentsService } from './documents.service'
 
 const ALLOWED_MIME_TYPES = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png']
-const MAX_SIZE_BYTES = 10 * 1024 * 1024 // 10 MB
+const MAX_SIZE_BYTES = 5 * 1024 * 1024 // 5 MB
 
 @ApiTags('Documentos')
 @ApiBearerAuth()
@@ -25,7 +25,7 @@ export class DocumentsController {
   constructor(private readonly documentsService: DocumentsService) {}
 
   @Post('upload')
-  @ApiOperation({ summary: 'Upload de documento médico para uma consulta' })
+  @ApiOperation({ summary: 'Upload temporário de documento médico para extração de texto' })
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(FileInterceptor('file', { limits: { fileSize: MAX_SIZE_BYTES } }))
   upload(
