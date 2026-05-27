@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Patch, UseGuards } from '@nestjs/common'
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common'
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard'
 import { CurrentUser } from '../../common/decorators/current-user.decorator'
@@ -27,6 +27,12 @@ export class ConsultationsController {
   @ApiOperation({ summary: 'Obter detalhes de uma consulta' })
   findOne(@Param('id') id: string) {
     return this.consultationsService.findById(id)
+  }
+
+  @Get(':id/ai-summary')
+  @ApiOperation({ summary: 'Obter resumo da IA vinculado à consulta' })
+  findAiSummary(@Param('id') id: string) {
+    return this.consultationsService.findAiSummaryByConsultation(id)
   }
 
   @Post(':id/accept')
