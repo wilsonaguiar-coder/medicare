@@ -472,6 +472,8 @@ function AiSummaryCard({ status, summary, error }: { status: AiStatus; summary: 
         <div className="mt-5 grid gap-4">
           <SummarySection title="Queixa principal" value={parsed.queixa_principal} />
           <SummaryList title="Pontos de atencao" values={parsed.pontos_de_atencao} />
+          <SummaryList title="Sugestoes de doencas / hipoteses clinicas" values={parsed.hipoteses_clinicas} />
+          <SummaryList title="CID-10 provaveis" values={parsed.cid10_provaveis} />
           <SummaryList title="Respostas objetivas" values={parsed.respostas_objetivas} />
           <SummaryList title="Documentos resumidos" values={parsed.documentos_resumidos} />
           <SummaryList title="Perguntas sugeridas para o medico" values={parsed.perguntas_sugeridas_para_o_medico} />
@@ -521,6 +523,8 @@ function parseSummary(summary: string) {
     return JSON.parse(summary) as {
       queixa_principal?: string
       pontos_de_atencao?: string[]
+      hipoteses_clinicas?: string[]
+      cid10_provaveis?: string[]
       respostas_objetivas?: string[]
       documentos_resumidos?: string[]
       perguntas_sugeridas_para_o_medico?: string[]
