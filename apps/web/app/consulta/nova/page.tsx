@@ -85,6 +85,10 @@ export default function NovaConsultaPage() {
   const [summaryStatus, setSummaryStatus] = useState<AiStatus>('idle')
   const [summaryError, setSummaryError] = useState('')
 
+  // Availability check
+  const [availabilityChecking, setAvailabilityChecking] = useState(false)
+  const [noAvailableDoctors, setNoAvailableDoctors] = useState(false)
+
   // Video call
   const [videoToken, setVideoToken] = useState<string | null>(null)
   const [videoServerUrl, setVideoServerUrl] = useState<string | null>(null)
@@ -186,6 +190,26 @@ export default function NovaConsultaPage() {
     } finally {
       setDocumentProcessing(false)
     }
+  }
+
+  async function handleProceedToPayment() {
+    setAvailabilityChecking(true)
+    setNoAvailableDoctors(false)
+    try {
+      const res = await fetch(`${API_BASE}/doctors/available?specialty=${selectedSpecialty}`)
+      if (res.ok) {
+        const data = await res.json() as { available: boolean; count: number }
+        if (!data.available) {
+          setNoAvailableDoctors(true)
+          return
+        }
+      }
+    } catch {
+      // se falhar a verificação, deixa seguir (não bloqueia por erro de rede)
+    } finally {
+      setAvailabilityChecking(false)
+    }
+    setActiveStep('payment')
   }
 
   async function handleEnterCall() {
@@ -473,7 +497,23 @@ export default function NovaConsultaPage() {
                 <StepCard number="3" title="Anexar ao atendimento"><button type="button" onClick={attachPendingDocuments} disabled={pendingDocuments.length === 0 || documentProcessing} className="w-full rounded-xl px-5 py-3 text-sm font-semibold text-white transition-all disabled:cursor-not-allowed disabled:opacity-50" style={{ backgroundColor: T, boxShadow: `0 4px 16px ${T}35` }}>{documentProcessing ? 'Extraindo texto...' : 'Anexar documento'}</button><p className="mt-3 text-xs leading-relaxed" style={{ color: '#64748B' }}>Nada e analisado antes de voce clicar em anexar. Revise o arquivo escolhido antes de continuar.</p></StepCard>
               </div>
               <div className="mt-6 rounded-2xl p-5" style={{ border: '1px solid #DDE7EE', backgroundColor: '#F8FAFC' }}><p className="text-sm font-semibold" style={{ color: N }}>Documentos adicionados</p>{documents.length === 0 ? <p className="mt-2 text-sm" style={{ color: '#64748B' }}>Nenhum documento adicionado. Esta etapa e opcional; voce pode seguir sem anexos.</p> : <div className="mt-4 space-y-3">{documents.map((d) => <div key={d.id} className="rounded-xl bg-white p-4" style={{ border: '1px solid #DDE7EE' }}><div className="flex items-center justify-between gap-4"><div className="min-w-0"><p className="truncate text-sm font-semibold" style={{ color: N }}>{d.name}</p><p className="mt-0.5 text-xs" style={{ color: '#64748B' }}>{documentTypeLabel(d.type)} - {formatBytes(d.size)} - OCR concluido</p></div><button type="button" onClick={() => removeDocument(d.id)} className="text-xs font-semibold hover:underline" style={{ color: '#BE123C' }}>Remover</button></div><p className="mt-3 line-clamp-2 text-xs leading-relaxed" style={{ color: '#64748B' }}>{d.extractedText}</p></div>)}</div>}</div>
-              <StepActions backLabel="Voltar para pre-triagem" nextLabel="Continuar para pagamento" onBack={() => setActiveStep('triage')} onNext={() => setActiveStep('payment')} nextDisabled={documentProcessing} />
+              {noAvailableDoctors && (
+                <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm">
+                  <p className="font-semibold" style={{ color: '#92400E' }}>Nenhum médico de {selected.label} disponível agora</p>
+                  <p className="mt-1" style={{ color: '#78350F' }}>Todos os profissionais desta especialidade estão offline no momento. Tente novamente em instantes ou escolha outra especialidade.</p>
+                  <button type="button" onClick={() => { setNoAvailableDoctors(false); setActiveStep('specialty') }}
+                    className="mt-3 text-xs font-semibold hover:underline" style={{ color: '#92400E' }}>
+                    Escolher outra especialidade
+                  </button>
+                </div>
+              )}
+              <StepActions
+                backLabel="Voltar para pre-triagem"
+                nextLabel={availabilityChecking ? 'Verificando disponibilidade...' : 'Continuar para pagamento'}
+                onBack={() => { setNoAvailableDoctors(false); setActiveStep('triage') }}
+                onNext={handleProceedToPayment}
+                nextDisabled={documentProcessing || availabilityChecking}
+              />
             </section>
           )}
 

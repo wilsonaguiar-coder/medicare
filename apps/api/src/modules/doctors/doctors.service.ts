@@ -7,10 +7,17 @@ import { Doctor } from './entities/doctor.entity'
 export class DoctorsService {
   constructor(@InjectRepository(Doctor) private readonly repo: Repository<Doctor>) {}
 
-  findAvailable(specialty: string) {
-    return this.repo.find({
-      where: { status: 'AVAILABLE', approvalStatus: 'APPROVED' },
-    })
+  async findAvailable(specialty?: string) {
+    const qb = this.repo
+      .createQueryBuilder('doctor')
+      .where('doctor.status = :status', { status: 'AVAILABLE' })
+      .andWhere('doctor.approvalStatus = :approval', { approval: 'APPROVED' })
+
+    if (specialty) {
+      qb.andWhere(':specialty = ANY(doctor.specialties)', { specialty })
+    }
+
+    return qb.getMany()
   }
 
   findByUserId(userId: string) {
