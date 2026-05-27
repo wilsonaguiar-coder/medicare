@@ -18,21 +18,24 @@ const SPECIALTIES: { key: string; label: string; icon: string | React.ReactNode;
 
 function StomachIcon() {
   return (
-    <svg width="28" height="28" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      {/* J-shaped stomach: fundus dome upper-left, angular notch on right (lesser curvature) */}
       <path
-        d="M20 14c-4 0-8 3-9 7-1 3 0 6 1 9 1 4 1 8 0 12-1 3-1 6 1 8 2 3 6 4 9 3 2-1 4-3 6-3s4 2 7 2c4 0 8-2 9-6 1-3 0-7-1-10-2-5-2-10-1-15 1-4-1-8-5-9-2-1-4 0-6 1-1 1-3 2-5 1-2 0-4-1-6 0z"
+        d="M13 4C9 3 5 5 4 8C3 11 3 15 5 18C6 20 8 22 12 22C15 22 17 20 18 17C19 14 17 12 17 9C16 7 15 5 13 4Z"
         fill="#f97316"
         fillOpacity="0.15"
         stroke="#f97316"
-        strokeWidth="2.5"
+        strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
+      {/* Rugae fold */}
       <path
-        d="M24 22c0 0 2-3 5-2"
+        d="M8 14C9.5 12 11.5 12 13 14"
         stroke="#f97316"
-        strokeWidth="2"
+        strokeWidth="1.5"
         strokeLinecap="round"
+        fill="none"
       />
     </svg>
   )
