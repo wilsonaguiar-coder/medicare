@@ -72,7 +72,6 @@ export default function NovaConsultaPage() {
         style={{
           borderColor: '#17B890',
           backgroundColor: '#F0FDF9',
-          focusRingColor: '#17B890',
         }}
       >
         <span className="text-3xl">🤔</span>
