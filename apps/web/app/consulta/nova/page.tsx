@@ -79,12 +79,10 @@ export default function NovaConsultaPage() {
         <div className="flex-1">
           <p className="text-sm font-semibold" style={{ color: '#0A2342' }}>Não sei qual especialidade escolher</p>
           <p className="text-xs mt-0.5" style={{ color: '#475569' }}>
-            Um médico de Clínica Geral irá avaliar seu caso e orientar o atendimento adequado.
+            Descreva seus sintomas e nossa IA irá indicar a especialidade mais adequada para você.
           </p>
         </div>
-        <div className="text-xs font-semibold px-3 py-1 rounded-full" style={{ backgroundColor: '#17B890', color: 'white' }}>
-          R$ 120,00
-        </div>
+        <span className="text-lg">✨</span>
       </button>
     </div>
   )
