@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import OpenAI from 'openai'
 
+const DEFAULT_OPENAI_MODEL = 'gpt-5.4-mini'
+
 const documentSummaryFormat = {
   type: 'json_schema' as const,
   json_schema: {
@@ -73,7 +75,7 @@ export class AiService {
 
   async summarizeDocument(text: string): Promise<string> {
     const response = await this.openai.chat.completions.create({
-      model: this.config.get('OPENAI_MODEL', 'gpt-4o'),
+      model: this.config.get('OPENAI_MODEL', DEFAULT_OPENAI_MODEL),
       response_format: documentSummaryFormat,
       messages: [
         {
@@ -105,7 +107,7 @@ export class AiService {
     documentSummaries: string[]
   }): Promise<string> {
     const response = await this.openai.chat.completions.create({
-      model: this.config.get('OPENAI_MODEL', 'gpt-4o'),
+      model: this.config.get('OPENAI_MODEL', DEFAULT_OPENAI_MODEL),
       response_format: consultationPreparationFormat,
       messages: [
         {
@@ -129,7 +131,7 @@ export class AiService {
 
   async suggestAnamnesisTemplate(chiefComplaint: string, specialty: string): Promise<string> {
     const response = await this.openai.chat.completions.create({
-      model: this.config.get('OPENAI_MODEL', 'gpt-4o'),
+      model: this.config.get('OPENAI_MODEL', DEFAULT_OPENAI_MODEL),
       messages: [
         {
           role: 'system',
