@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 
@@ -8,7 +9,46 @@ const N = '#0A2342'
 const T = '#17B890'
 
 export default function LoginPage() {
+  const router = useRouter()
   const [showPassword, setShowPassword] = useState(false)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError('')
+    setLoading(true)
+
+    try {
+      const res = await fetch('/api/v1/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setError(data.message ?? 'E-mail ou senha incorretos.')
+        return
+      }
+
+      localStorage.setItem('medicare_token', data.accessToken)
+      localStorage.setItem('medicare_user', JSON.stringify(data.user))
+
+      if (data.user.role === 'DOCTOR') {
+        router.push('/painel/medico')
+      } else {
+        router.push('/painel/paciente')
+      }
+    } catch {
+      setError('Não foi possível conectar ao servidor. Tente novamente.')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <div style={{ backgroundColor: '#F8FAFC', minHeight: '100vh', fontFamily: "'Inter', system-ui, sans-serif" }}
@@ -29,7 +69,13 @@ export default function LoginPage() {
           Bem-vindo de volta à plataforma Medicare.
         </p>
 
-        <form className="flex flex-col gap-4">
+        {error && (
+          <div className="mb-4 rounded-lg px-4 py-3 text-sm" style={{ backgroundColor: '#FFF1F2', color: '#BE123C', border: '1px solid #FECDD3' }}>
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           {/* E-mail */}
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium" style={{ color: N }} htmlFor="email">
@@ -39,6 +85,9 @@ export default function LoginPage() {
               id="email"
               type="email"
               placeholder="seu@email.com.br"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              required
               className="input-field"
             />
           </div>
@@ -58,6 +107,9 @@ export default function LoginPage() {
                 id="password"
                 type={showPassword ? 'text' : 'password'}
                 placeholder="••••••••"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                required
                 className="input-field pr-10"
               />
               <button
@@ -75,10 +127,11 @@ export default function LoginPage() {
           {/* Submit */}
           <button
             type="submit"
-            className="mt-1 rounded-xl py-3 text-sm font-semibold text-white transition-all hover:opacity-90"
+            disabled={loading}
+            className="mt-1 rounded-xl py-3 text-sm font-semibold text-white transition-all hover:opacity-90 disabled:opacity-60"
             style={{ backgroundColor: T, boxShadow: `0 4px 16px ${T}40` }}
           >
-            Entrar
+            {loading ? 'Entrando…' : 'Entrar'}
           </button>
         </form>
 
