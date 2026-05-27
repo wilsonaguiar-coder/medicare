@@ -3,7 +3,7 @@
 import { useState, lazy, Suspense } from 'react'
 import Image from 'next/image'
 
-const VideoRoom = lazy(() => import('../../../consulta/nova/VideoRoom').then((m) => ({ default: m.VideoRoom })))
+const VideoRoom = lazy(() => import('../../consulta/nova/VideoRoom').then((m) => ({ default: m.VideoRoom })))
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '/api/v1'
 const N = '#0A2342'
