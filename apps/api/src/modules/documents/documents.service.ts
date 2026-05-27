@@ -1,45 +1,47 @@
-import { Injectable } from '@nestjs/common'
+import { BadRequestException, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { InjectQueue } from '@nestjs/bull'
-import { Queue } from 'bull'
 import { Repository } from 'typeorm'
-import { ConfigService } from '@nestjs/config'
-import { MedicalDocument } from './entities/medical-document.entity'
+import { PatientDocumentInsight } from './entities/patient-document-insight.entity'
+import { DocumentExtractionService } from './document-extraction.service'
+import { AiService } from '../ai/ai.service'
+
+const AI_ELIGIBLE_TYPES = ['LAB_RESULT', 'MEDICAL_REPORT', 'PRESCRIPTION', 'CLINICAL_REPORT', 'OTHER']
 
 @Injectable()
 export class DocumentsService {
   constructor(
-    @InjectRepository(MedicalDocument) private readonly repo: Repository<MedicalDocument>,
-    @InjectQueue('ai-processing') private readonly aiQueue: Queue,
-    private readonly config: ConfigService,
+    @InjectRepository(PatientDocumentInsight)
+    private readonly repo: Repository<PatientDocumentInsight>,
+    private readonly extractionService: DocumentExtractionService,
+    private readonly aiService: AiService,
   ) {}
 
   async upload(
     patientId: string,
     file: Express.Multer.File,
     data: { consultationId: string; type: string },
-  ): Promise<MedicalDocument> {
-    const storageKey = `documents/${data.consultationId}/${Date.now()}-${file.originalname}`
+  ): Promise<PatientDocumentInsight> {
+    if (!data.consultationId) {
+      throw new BadRequestException('Consulta nao informada.')
+    }
 
-    const document = this.repo.create({
+    if (!AI_ELIGIBLE_TYPES.includes(data.type)) {
+      throw new BadRequestException('Tipo de documento invalido.')
+    }
+
+    const extractedText = await this.extractionService.extractText(file)
+    const aiSummary = await this.aiService.summarizeDocument(extractedText)
+
+    const insight = this.repo.create({
       patientId,
       consultationId: data.consultationId,
       type: data.type,
-      fileName: file.originalname,
-      mimeType: file.mimetype,
-      storageKey,
-      sizeBytes: file.size,
+      extractedText,
+      aiSummary,
+      aiProcessedAt: new Date(),
     })
 
-    const saved = await this.repo.save(document)
-
-    // Imagens de exames de imagem NÃO são processadas por IA (conforme spec)
-    const aiEligibleTypes = ['LAB_RESULT', 'MEDICAL_REPORT', 'PRESCRIPTION', 'CLINICAL_REPORT']
-    if (aiEligibleTypes.includes(data.type)) {
-      await this.aiQueue.add('summarize-document', { documentId: saved.id, storageKey })
-    }
-
-    return saved
+    return this.repo.save(insight)
   }
 
   findByConsultation(consultationId: string) {
