@@ -105,6 +105,7 @@ export class AiService {
     symptomDuration?: string
     flags: Record<string, boolean>
     documentSummaries: string[]
+    extractedTexts?: string[]
   }): Promise<string> {
     const response = await this.openai.chat.completions.create({
       model: this.config.get('OPENAI_MODEL', DEFAULT_OPENAI_MODEL),
@@ -114,7 +115,9 @@ export class AiService {
           role: 'system',
           content: [
             'Voce organiza uma pre-triagem para leitura do medico antes da teleconsulta.',
+            'Use sintomas, tempo de inicio, respostas objetivas e textos extraidos dos documentos por OCR/parser.',
             'NAO faca diagnostico. NAO classifique gravidade. NAO recomende tratamento.',
+            'A resposta deve apoiar a decisao medica, nunca substituir o medico.',
           ].join(' '),
         },
         {
