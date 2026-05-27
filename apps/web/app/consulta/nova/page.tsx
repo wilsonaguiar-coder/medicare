@@ -92,6 +92,7 @@ export default function NovaConsultaPage() {
   // Video call
   const [videoToken, setVideoToken] = useState<string | null>(null)
   const [videoServerUrl, setVideoServerUrl] = useState<string | null>(null)
+  const [videoRoomName, setVideoRoomName] = useState<string | null>(null)
   const [videoLoading, setVideoLoading] = useState(false)
   const [videoError, setVideoError] = useState<string | null>(null)
 
@@ -226,6 +227,7 @@ export default function NovaConsultaPage() {
       })
       if (!res.ok) throw new Error('Nao foi possivel obter o token de video.')
       const data = await res.json() as { token: string; serverUrl: string }
+      setVideoRoomName(roomName)
       setVideoToken(data.token)
       setVideoServerUrl(data.serverUrl)
     } catch (err) {
@@ -549,9 +551,17 @@ export default function NovaConsultaPage() {
                 </div>
               ) : (
                 <div className="rounded-2xl bg-white p-4 shadow-sm" style={{ border: '1px solid #E2E8F0' }}>
-                  <div className="mb-4 flex items-center justify-between">
-                    <div><p className="text-xs font-semibold" style={{ color: T }}>{selected.label}</p><h2 className="text-lg font-bold" style={{ color: N }}>Consulta em andamento</h2></div>
-                    <button type="button" onClick={() => { setVideoToken(null); setVideoServerUrl(null) }}
+                  <div className="mb-4 flex items-center justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold" style={{ color: T }}>{selected.label}</p>
+                      <h2 className="text-lg font-bold" style={{ color: N }}>Consulta em andamento</h2>
+                      {videoRoomName && (
+                        <p className="mt-1 text-xs" style={{ color: '#64748B' }}>
+                          Código da sala: <span className="font-mono font-semibold select-all" style={{ color: N }}>{videoRoomName}</span>
+                        </p>
+                      )}
+                    </div>
+                    <button type="button" onClick={() => { setVideoToken(null); setVideoServerUrl(null); setVideoRoomName(null) }}
                       className="rounded-lg px-3 py-2 text-xs font-semibold transition-all hover:bg-red-50"
                       style={{ border: '1px solid #FCA5A5', color: '#DC2626' }}>
                       Encerrar consulta

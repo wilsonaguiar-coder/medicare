@@ -1,13 +1,42 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, lazy, Suspense } from 'react'
 import Image from 'next/image'
 
+const VideoRoom = lazy(() => import('../../../consulta/nova/VideoRoom').then((m) => ({ default: m.VideoRoom })))
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '/api/v1'
 const N = '#0A2342'
 const T = '#17B890'
 
 export default function PainelMedicoPage() {
   const [activeTab, setActiveTab] = useState('anotacoes')
+  const [roomCode, setRoomCode] = useState('')
+  const [videoToken, setVideoToken] = useState<string | null>(null)
+  const [videoServerUrl, setVideoServerUrl] = useState<string | null>(null)
+  const [joining, setJoining] = useState(false)
+  const [joinError, setJoinError] = useState('')
+
+  async function handleJoinRoom() {
+    if (!roomCode.trim() || joining) return
+    setJoining(true)
+    setJoinError('')
+    try {
+      const res = await fetch(`${API_BASE}/video/token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roomName: roomCode.trim(), participantName: 'Médico' }),
+      })
+      if (!res.ok) throw new Error('Nao foi possivel obter o token.')
+      const data = await res.json() as { token: string; serverUrl: string }
+      setVideoToken(data.token)
+      setVideoServerUrl(data.serverUrl)
+    } catch {
+      setJoinError('Nao foi possivel entrar na sala. Verifique o codigo.')
+    } finally {
+      setJoining(false)
+    }
+  }
 
   return (
     <div className="flex h-screen overflow-hidden"
@@ -17,7 +46,14 @@ export default function PainelMedicoPage() {
         <Header />
         <main className="flex-1 flex overflow-hidden gap-4 p-4">
           <LeftPanel />
-          <CenterPanel activeTab={activeTab} setActiveTab={setActiveTab} />
+          <CenterPanel
+            activeTab={activeTab} setActiveTab={setActiveTab}
+            videoToken={videoToken} videoServerUrl={videoServerUrl}
+            roomCode={roomCode} setRoomCode={setRoomCode}
+            joining={joining} joinError={joinError}
+            onJoinRoom={handleJoinRoom}
+            onLeaveRoom={() => { setVideoToken(null); setVideoServerUrl(null); setRoomCode('') }}
+          />
           <RightPanel />
         </main>
       </div>
@@ -188,7 +224,20 @@ function LeftPanel() {
 }
 
 /* ── CENTER PANEL ── */
-function CenterPanel({ activeTab, setActiveTab }: { activeTab: string; setActiveTab: (t: string) => void }) {
+interface CenterPanelProps {
+  activeTab: string
+  setActiveTab: (t: string) => void
+  videoToken: string | null
+  videoServerUrl: string | null
+  roomCode: string
+  setRoomCode: (v: string) => void
+  joining: boolean
+  joinError: string
+  onJoinRoom: () => void
+  onLeaveRoom: () => void
+}
+
+function CenterPanel({ activeTab, setActiveTab, videoToken, videoServerUrl, roomCode, setRoomCode, joining, joinError, onJoinRoom, onLeaveRoom }: CenterPanelProps) {
   const tabs = [
     { key: 'anotacoes',  label: 'Anotações'          },
     { key: 'prescricao', label: 'Prescrição'          },
@@ -202,74 +251,48 @@ function CenterPanel({ activeTab, setActiveTab }: { activeTab: string; setActive
       <div className="bg-white rounded-2xl overflow-hidden flex flex-col" style={{ border: '1px solid #E2E8F0', flex: '1 1 0' }}>
         {/* Video header */}
         <div className="flex items-center justify-between px-4 py-3 flex-shrink-0" style={{ borderBottom: '1px solid #F1F5F9' }}>
-          <div className="flex items-center gap-3">
-            <h2 className="text-sm font-semibold" style={{ color: N }}>Consulta em andamento</h2>
-            <span className="text-sm font-mono font-semibold" style={{ color: T }}>24:18</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <IconBtn><IconCamSettings /></IconBtn>
-            <IconBtn><IconFullscreen /></IconBtn>
-            <IconBtn><IconGrid /></IconBtn>
-            <button className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-semibold text-white"
+          <h2 className="text-sm font-semibold" style={{ color: N }}>
+            {videoToken ? 'Consulta em andamento' : 'Sala de vídeo'}
+          </h2>
+          {videoToken && (
+            <button onClick={onLeaveRoom} className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-semibold text-white"
               style={{ backgroundColor: '#EF4444' }}>
               Encerrar
             </button>
-          </div>
+          )}
         </div>
 
         {/* Video area */}
-        <div className="relative flex-1 min-h-0" style={{ background: 'linear-gradient(160deg, #1a2f4a 0%, #0f1e35 100%)' }}>
-          {/* Patient main video */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="relative" style={{ width: '100%', height: '100%' }}>
-              {/* Simulated patient face — gradient + silhouette */}
-              <div className="absolute inset-0 flex items-center justify-center"
-                style={{ background: 'linear-gradient(180deg, #1e3a5f 0%, #0f2840 100%)' }}>
-                <div className="flex flex-col items-center gap-3">
-                  <div className="rounded-full flex items-center justify-center"
-                    style={{ width: 100, height: 100, background: 'linear-gradient(135deg, #7C3AED 0%, #4f46e5 100%)' }}>
-                    <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.4">
-                      <circle cx="12" cy="8" r="4" />
-                      <path d="M6 20v-1a6 6 0 0 1 12 0v1" />
-                    </svg>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-white text-sm font-medium">Ana Clara Silva</p>
-                    <div className="flex items-center justify-center gap-1.5 mt-1">
-                      <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                      <span className="text-emerald-400 text-xs">Conectada</span>
-                    </div>
-                  </div>
-                </div>
+        <div className="relative flex-1 min-h-0">
+          {videoToken && videoServerUrl ? (
+            <Suspense fallback={<div className="h-full flex items-center justify-center text-sm text-white" style={{ background: '#0A2342' }}>Carregando...</div>}>
+              <VideoRoom token={videoToken} serverUrl={videoServerUrl} onDisconnect={onLeaveRoom} />
+            </Suspense>
+          ) : (
+            <div className="h-full flex flex-col items-center justify-center gap-4 p-6"
+              style={{ background: 'linear-gradient(160deg, #1a2f4a 0%, #0f1e35 100%)' }}>
+              <p className="text-white text-sm font-medium">Informe o código da sala para entrar na consulta</p>
+              <div className="flex items-center gap-2 w-full max-w-sm">
+                <input
+                  value={roomCode}
+                  onChange={(e) => setRoomCode(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && onJoinRoom()}
+                  placeholder="consulta-clinical_medicine-..."
+                  className="flex-1 rounded-lg px-3 py-2 text-sm outline-none"
+                  style={{ border: `1.5px solid ${T}`, color: N }}
+                />
+                <button onClick={onJoinRoom} disabled={!roomCode.trim() || joining}
+                  className="px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-50"
+                  style={{ backgroundColor: T }}>
+                  {joining ? '...' : 'Entrar'}
+                </button>
               </div>
+              {joinError && <p className="text-red-400 text-xs">{joinError}</p>}
+              <p className="text-xs text-center" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                O código aparece na tela do paciente após ele iniciar a consulta
+              </p>
             </div>
-          </div>
-
-          {/* Doctor thumbnail */}
-          <div className="absolute bottom-3 right-3 rounded-xl overflow-hidden flex items-center justify-center"
-            style={{ width: 80, height: 96, background: 'linear-gradient(135deg, #164e63, #0e7490)', border: `2px solid ${T}` }}>
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.4">
-              <circle cx="12" cy="8" r="4" />
-              <path d="M6 20v-1a6 6 0 0 1 12 0v1" />
-            </svg>
-          </div>
-
-          {/* Call controls */}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-3">
-            {[
-              { icon: <IconMic />,      bg: 'rgba(255,255,255,0.15)' },
-              { icon: <IconCam />,      bg: 'rgba(255,255,255,0.15)' },
-              { icon: <IconChatSm />,   bg: 'rgba(255,255,255,0.15)' },
-              { icon: <IconDocSm />,    bg: 'rgba(255,255,255,0.15)' },
-              { icon: <IconExpand />,   bg: 'rgba(255,255,255,0.15)' },
-              { icon: <IconPhone />,    bg: '#EF4444' },
-            ].map((c, i) => (
-              <button key={i} className="h-10 w-10 rounded-full flex items-center justify-center transition-opacity hover:opacity-80"
-                style={{ backgroundColor: c.bg }}>
-                {c.icon}
-              </button>
-            ))}
-          </div>
+          )}
         </div>
 
         {/* Notes tabs */}
