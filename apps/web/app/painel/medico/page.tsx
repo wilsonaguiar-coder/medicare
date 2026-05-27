@@ -405,14 +405,6 @@ function RightPanel() {
 }
 
 /* ── ICON HELPERS ── */
-function IconBtn({ children }: { children: React.ReactNode }) {
-  return (
-    <button className="p-1.5 rounded-lg hover:bg-slate-50 transition-colors" style={{ color: '#94A3B8' }}>
-      {children}
-    </button>
-  )
-}
-
 const Ico = ({ d, size = 16 }: { d: string; size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     <path d={d} />
