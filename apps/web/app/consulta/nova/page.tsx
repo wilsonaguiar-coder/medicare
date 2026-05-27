@@ -5,8 +5,9 @@ import type { ReactNode } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 
-type FlowStep = 'identification' | 'specialty' | 'triage' | 'documents'
+type FlowStep = 'identification' | 'specialty' | 'triage' | 'documents' | 'payment'
 type UploadedDocument = { id: string; name: string; size: number; type: string }
+type PendingDocument = { id: string; name: string; size: number }
 
 const MIN_SYMPTOMS_LENGTH = 50
 const MAX_DOCUMENT_SIZE_BYTES = 5 * 1024 * 1024
@@ -64,6 +65,7 @@ export default function NovaConsultaPage() {
   const [usesMedication, setUsesMedication] = useState(false)
   const [isPregnant, setIsPregnant] = useState(false)
   const [documentType, setDocumentType] = useState(DOCUMENT_TYPES[0].value)
+  const [pendingDocuments, setPendingDocuments] = useState<PendingDocument[]>([])
   const [documents, setDocuments] = useState<UploadedDocument[]>([])
   const [documentError, setDocumentError] = useState('')
 
@@ -77,31 +79,46 @@ export default function NovaConsultaPage() {
     acceptedTerms
   const canContinueTriage = symptomsLength >= MIN_SYMPTOMS_LENGTH
 
-  function handleDocuments(files: FileList | null) {
+  function handleDocumentSelection(files: FileList | null) {
     if (!files) return
 
     const selectedFiles = Array.from(files)
     const invalidType = selectedFiles.find((file) => !ALLOWED_DOCUMENT_TYPES.includes(file.type))
     if (invalidType) {
       setDocumentError(`${invalidType.name} não é aceito. Envie apenas PDF, JPG ou PNG.`)
+      setPendingDocuments([])
       return
     }
 
     const oversized = selectedFiles.find((file) => file.size > MAX_DOCUMENT_SIZE_BYTES)
     if (oversized) {
       setDocumentError(`${oversized.name} tem ${formatBytes(oversized.size)}. O limite é 5 MB por arquivo.`)
+      setPendingDocuments([])
       return
     }
 
-    const nextDocuments = selectedFiles.map((file) => ({
-      id: `${file.name}-${file.size}-${Date.now()}-${Math.random()}`,
-      name: file.name,
-      size: file.size,
-      type: documentType,
-    }))
+    setDocumentError('')
+    setPendingDocuments(
+      selectedFiles.map((file) => ({
+        id: `${file.name}-${file.size}-${Date.now()}-${Math.random()}`,
+        name: file.name,
+        size: file.size,
+      })),
+    )
+  }
+
+  function attachPendingDocuments() {
+    if (pendingDocuments.length === 0) {
+      setDocumentError('Selecione pelo menos um arquivo antes de anexar.')
+      return
+    }
 
     setDocumentError('')
-    setDocuments((current) => [...current, ...nextDocuments])
+    setDocuments((current) => [
+      ...current,
+      ...pendingDocuments.map((document) => ({ ...document, type: documentType })),
+    ])
+    setPendingDocuments([])
   }
 
   function removeDocument(id: string) {
@@ -124,12 +141,14 @@ export default function NovaConsultaPage() {
               {activeStep === 'specialty' && 'Escolha a especialidade da consulta'}
               {activeStep === 'triage' && 'Conte o que você está sentindo'}
               {activeStep === 'documents' && 'Envie documentos e exames'}
+              {activeStep === 'payment' && 'Confirme o pagamento'}
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed" style={{ color: '#64748B' }}>
               {activeStep === 'identification' && 'Para proteger seus dados de saúde e manter seu histórico de atendimento, a consulta começa com login ou cadastro do paciente.'}
               {activeStep === 'specialty' && 'Agora selecione o tipo de atendimento desejado para continuar o agendamento.'}
               {activeStep === 'triage' && 'Essas informações ajudam o médico a se preparar antes da consulta.'}
-              {activeStep === 'documents' && 'Os arquivos serão usados apenas para extração temporária de texto e análise da IA. O documento original não será salvo.'}
+              {activeStep === 'documents' && 'Selecione o arquivo, escolha o tipo e só então anexe. Assim você evita enviar algo errado para análise.'}
+              {activeStep === 'payment' && 'Confira o resumo da consulta antes de seguir para a cobrança.'}
             </p>
           </div>
 
@@ -385,66 +404,129 @@ export default function NovaConsultaPage() {
                 </div>
               )}
 
-              <div className="grid gap-5 lg:grid-cols-[280px_1fr]">
-                <div className="rounded-2xl p-5" style={{ border: '1px solid #DDE7EE', backgroundColor: '#F8FAFC' }}>
-                  <Field label="Tipo do documento">
+              <div className="grid gap-4 lg:grid-cols-3">
+                <StepCard number="1" title="Selecionar arquivo">
+                  <label
+                    className="flex min-h-[150px] cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-5 text-center transition-all hover:bg-white"
+                    style={{ borderColor: '#BFEDE2', backgroundColor: '#F8FFFE' }}
+                  >
+                    <span className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl" style={{ backgroundColor: '#E6FAF6', color: T }}>
+                      <UploadIcon />
+                    </span>
+                    <span className="text-sm font-semibold" style={{ color: N }}>Escolher arquivo</span>
+                    <span className="mt-1 text-xs" style={{ color: '#64748B' }}>PDF, JPG ou PNG até 5 MB</span>
+                    <input
+                      type="file"
+                      multiple
+                      accept="application/pdf,image/jpeg,image/jpg,image/png"
+                      className="hidden"
+                      onChange={(event) => {
+                        handleDocumentSelection(event.target.files)
+                        event.currentTarget.value = ''
+                      }}
+                    />
+                  </label>
+                  {pendingDocuments.length > 0 && (
+                    <div className="mt-3 space-y-1">
+                      {pendingDocuments.map((document) => (
+                        <p key={document.id} className="truncate text-xs" style={{ color: '#64748B' }}>
+                          {document.name} · {formatBytes(document.size)}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                </StepCard>
+
+                <StepCard number="2" title="Tipo de documento">
+                  <Field label="Classificação">
                     <select value={documentType} onChange={(event) => setDocumentType(event.target.value)} className="input-field">
                       {DOCUMENT_TYPES.map((type) => (
                         <option key={type.value} value={type.value}>{type.label}</option>
                       ))}
                     </select>
                   </Field>
+                  <p className="mt-3 text-xs leading-relaxed" style={{ color: '#64748B' }}>
+                    Escolha o tipo correto para ajudar a IA a organizar as informações sem confundir o médico.
+                  </p>
+                </StepCard>
 
-                  <div className="mt-4 rounded-xl p-4 text-xs leading-relaxed" style={{ backgroundColor: 'white', color: '#64748B', border: '1px solid #DDE7EE' }}>
-                    Limite de 5 MB por arquivo. Arquivos maiores serão recusados antes do envio.
-                  </div>
-                </div>
-
-                <label
-                  className="flex min-h-[220px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed p-8 text-center transition-all hover:bg-white"
-                  style={{ borderColor: '#BFEDE2', backgroundColor: '#F8FFFE' }}
-                >
-                  <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl" style={{ backgroundColor: '#E6FAF6', color: T }}>
-                    <UploadIcon />
-                  </span>
-                  <span className="text-sm font-semibold" style={{ color: N }}>Selecionar arquivos</span>
-                  <span className="mt-1 text-xs" style={{ color: '#64748B' }}>PDF, JPG ou PNG até 5 MB por arquivo</span>
-                  <input
-                    type="file"
-                    multiple
-                    accept="application/pdf,image/jpeg,image/jpg,image/png"
-                    className="hidden"
-                    onChange={(event) => {
-                      handleDocuments(event.target.files)
-                      event.currentTarget.value = ''
-                    }}
-                  />
-                </label>
+                <StepCard number="3" title="Anexar ao atendimento">
+                  <button
+                    type="button"
+                    onClick={attachPendingDocuments}
+                    disabled={pendingDocuments.length === 0}
+                    className="w-full rounded-xl px-5 py-3 text-sm font-semibold text-white transition-all disabled:cursor-not-allowed disabled:opacity-50"
+                    style={{ backgroundColor: T, boxShadow: `0 4px 16px ${T}35` }}
+                  >
+                    Anexar documento
+                  </button>
+                  <p className="mt-3 text-xs leading-relaxed" style={{ color: '#64748B' }}>
+                    Nada é analisado antes de você clicar em anexar. Revise o arquivo escolhido antes de continuar.
+                  </p>
+                </StepCard>
               </div>
 
-              {documents.length > 0 && (
-                <div className="mt-6 space-y-3">
-                  <p className="text-sm font-semibold" style={{ color: N }}>Arquivos selecionados para extração</p>
-                  {documents.map((document) => (
-                    <div key={document.id} className="flex items-center justify-between gap-4 rounded-xl p-4" style={{ border: '1px solid #DDE7EE', backgroundColor: 'white' }}>
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold" style={{ color: N }}>{document.name}</p>
-                        <p className="mt-0.5 text-xs" style={{ color: '#64748B' }}>
-                          {documentTypeLabel(document.type)} · {formatBytes(document.size)} · arquivo não será armazenado
-                        </p>
+              <div className="mt-6 rounded-2xl p-5" style={{ border: '1px solid #DDE7EE', backgroundColor: '#F8FAFC' }}>
+                <p className="text-sm font-semibold" style={{ color: N }}>Documentos adicionados</p>
+                {documents.length === 0 ? (
+                  <p className="mt-2 text-sm" style={{ color: '#64748B' }}>
+                    Nenhum documento adicionado. Esta etapa é opcional; você pode seguir sem anexos.
+                  </p>
+                ) : (
+                  <div className="mt-4 space-y-3">
+                    {documents.map((document) => (
+                      <div key={document.id} className="flex items-center justify-between gap-4 rounded-xl bg-white p-4" style={{ border: '1px solid #DDE7EE' }}>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold" style={{ color: N }}>{document.name}</p>
+                          <p className="mt-0.5 text-xs" style={{ color: '#64748B' }}>
+                            {documentTypeLabel(document.type)} · {formatBytes(document.size)} · arquivo não será armazenado
+                          </p>
+                        </div>
+                        <button type="button" onClick={() => removeDocument(document.id)} className="text-xs font-semibold hover:underline" style={{ color: '#BE123C' }}>
+                          Remover
+                        </button>
                       </div>
-                      <button type="button" onClick={() => removeDocument(document.id)} className="text-xs font-semibold hover:underline" style={{ color: '#BE123C' }}>
-                        Remover
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                )}
+              </div>
 
               <StepActions
                 backLabel="Voltar para pré-triagem"
                 nextLabel="Continuar para pagamento"
                 onBack={() => setActiveStep('triage')}
+                onNext={() => setActiveStep('payment')}
+              />
+            </section>
+          )}
+
+          {activeStep === 'payment' && (
+            <section className="mt-8 rounded-2xl bg-white p-6 shadow-sm" style={{ border: '1px solid #E2E8F0' }}>
+              <div className="mb-6">
+                <p className="text-xs font-semibold" style={{ color: T }}>{selected.label}</p>
+                <h2 className="mt-2 text-xl font-bold" style={{ color: N }}>Pagamento</h2>
+                <p className="mt-1 text-sm" style={{ color: '#64748B' }}>
+                  Confira as informações antes de confirmar a cobrança e entrar na fila de atendimento.
+                </p>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-3">
+                <SummaryCard label="Especialidade" value={selected.label} />
+                <SummaryCard label="Documentos" value={`${documents.length} anexado${documents.length === 1 ? '' : 's'}`} />
+                <SummaryCard label="Valor" value={`R$ ${selected.price},00`} />
+              </div>
+
+              <div className="mt-6 rounded-2xl p-5" style={{ backgroundColor: '#F8FAFC', border: '1px solid #DDE7EE' }}>
+                <p className="text-sm font-semibold" style={{ color: N }}>Forma de pagamento</p>
+                <p className="mt-2 text-sm" style={{ color: '#64748B' }}>
+                  Próxima fase: conectar Pix/cartão e, após confirmação, colocar o paciente na fila da consulta.
+                </p>
+              </div>
+
+              <StepActions
+                backLabel="Voltar para documentos"
+                nextLabel="Confirmar pagamento"
+                onBack={() => setActiveStep('documents')}
                 onNext={() => undefined}
               />
             </section>
@@ -475,7 +557,7 @@ export default function NovaConsultaPage() {
 
 function Progress({ activeStep }: { activeStep: FlowStep }) {
   const steps = ['Identificação', 'Especialidade', 'Pré-triagem', 'Documentos', 'Pagamento', 'Consulta']
-  const activeIndex = activeStep === 'identification' ? 0 : activeStep === 'specialty' ? 1 : activeStep === 'triage' ? 2 : 3
+  const activeIndex = activeStep === 'identification' ? 0 : activeStep === 'specialty' ? 1 : activeStep === 'triage' ? 2 : activeStep === 'documents' ? 3 : 4
 
   return (
     <div className="mb-8 flex flex-wrap items-center gap-2 text-sm">
@@ -558,6 +640,29 @@ function StepActions({
       >
         {nextLabel}
       </button>
+    </div>
+  )
+}
+
+function StepCard({ number, title, children }: { number: string; title: string; children: ReactNode }) {
+  return (
+    <div className="rounded-2xl p-5" style={{ border: '1px solid #DDE7EE', backgroundColor: '#F8FAFC' }}>
+      <div className="mb-4 flex items-center gap-3">
+        <span className="flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold text-white" style={{ backgroundColor: T }}>
+          {number}
+        </span>
+        <h3 className="text-sm font-bold" style={{ color: N }}>{title}</h3>
+      </div>
+      {children}
+    </div>
+  )
+}
+
+function SummaryCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl p-5" style={{ backgroundColor: '#F8FAFC', border: '1px solid #DDE7EE' }}>
+      <p className="text-xs" style={{ color: '#64748B' }}>{label}</p>
+      <p className="mt-1 text-sm font-bold" style={{ color: N }}>{value}</p>
     </div>
   )
 }
