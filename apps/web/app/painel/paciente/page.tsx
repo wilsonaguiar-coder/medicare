@@ -288,7 +288,7 @@ function DoctorSvg() {
 
 /* ── ICONS ── */
 type IcoProps = { active?: boolean }
-const ico = (d: string | React.ReactNode, size = 16) => ({ active }: IcoProps) => (
+const ico = (d: string | React.ReactNode, size = 16) => (_props: IcoProps) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     {typeof d === 'string' ? <path d={d} /> : d}
   </svg>
