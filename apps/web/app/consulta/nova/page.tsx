@@ -483,12 +483,12 @@ function AiSummaryCard({ status, summary, error }: { status: AiStatus; summary: 
   )
 }
 
-function SummarySection({ title, value }: { title: string; value?: string }) {
+function SummarySection({ title, value }: { title: string; value: string | undefined }) {
   if (!value) return null
   return <div className="rounded-xl bg-white p-4" style={{ border: '1px solid #E2E8F0' }}><p className="text-xs font-semibold" style={{ color: T }}>{title}</p><p className="mt-2 text-sm leading-relaxed" style={{ color: '#475569' }}>{value}</p></div>
 }
 
-function SummaryList({ title, values }: { title: string; values?: string[] }) {
+function SummaryList({ title, values }: { title: string; values: string[] | undefined }) {
   if (!values || values.length === 0) return null
   return <div className="rounded-xl bg-white p-4" style={{ border: '1px solid #E2E8F0' }}><p className="text-xs font-semibold" style={{ color: T }}>{title}</p><ul className="mt-2 space-y-1 text-sm leading-relaxed" style={{ color: '#475569' }}>{values.map((value, index) => <li key={`${title}-${index}`}>- {value}</li>)}</ul></div>
 }
