@@ -410,7 +410,9 @@ function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
           <div className="col-span-2 md:col-span-1">
             <div className="flex items-center gap-2 mb-3">
-              <Image src="/logo.png" alt="Medicare" width={28} height={28} />
+              <div className="rounded-lg p-1 flex-shrink-0" style={{ backgroundColor: 'white' }}>
+                <Image src="/logo.png" alt="Medicare" width={26} height={26} />
+              </div>
               <span className="text-white font-bold text-sm">Medicare</span>
             </div>
             <p className="text-xs leading-relaxed mb-4">Teleconsulta médica sob demanda. Conectando pacientes a médicos qualificados.</p>
