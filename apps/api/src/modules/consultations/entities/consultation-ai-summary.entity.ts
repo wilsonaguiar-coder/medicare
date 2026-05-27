@@ -18,7 +18,7 @@ export class ConsultationAiSummary {
   patientId: string
 
   @Column({ nullable: true })
-  doctorId: string
+  doctorId: string | null
 
   @Column({ type: 'text' })
   chiefComplaint: string
@@ -39,13 +39,13 @@ export class ConsultationAiSummary {
   suggestedQuestions: string[]
 
   @Column({ type: 'text', nullable: true })
-  limitations: string
+  limitations: string | null
 
   @Column({ type: 'text', nullable: true })
-  sourceSymptoms: string
+  sourceSymptoms: string | null
 
   @Column({ nullable: true })
-  sourceSymptomDuration: string
+  sourceSymptomDuration: string | null
 
   @Column('jsonb', { default: {} })
   sourceFlags: Record<string, boolean>
@@ -54,7 +54,7 @@ export class ConsultationAiSummary {
   sourceDocumentSummaryIds: string[]
 
   @Column({ nullable: true })
-  model: string
+  model: string | null
 
   @Column({ default: 'consultation-preparation-v1' })
   promptVersion: string
