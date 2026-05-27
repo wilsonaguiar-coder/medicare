@@ -17,7 +17,7 @@ export class ConsultationAiSummary {
   @Column()
   patientId: string
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   doctorId: string | null
 
   @Column({ type: 'text' })
@@ -44,7 +44,7 @@ export class ConsultationAiSummary {
   @Column({ type: 'text', nullable: true })
   sourceSymptoms: string | null
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   sourceSymptomDuration: string | null
 
   @Column('jsonb', { default: {} })
@@ -53,7 +53,7 @@ export class ConsultationAiSummary {
   @Column('jsonb', { default: [] })
   sourceDocumentSummaryIds: string[]
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   model: string | null
 
   @Column({ default: 'consultation-preparation-v1' })
