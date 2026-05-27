@@ -7,16 +7,15 @@ export type DocumentType =
 
 export type DocumentMimeType = 'application/pdf' | 'image/jpg' | 'image/jpeg' | 'image/png'
 
-export interface MedicalDocument {
+export interface PatientDocumentInsight {
   id: string
   consultationId: string
   patientId: string
   type: DocumentType
-  fileName: string
-  mimeType: DocumentMimeType
-  storageKey: string
-  sizeBytes: number
-  aiSummary?: string
-  aiProcessedAt?: Date
+  extractedText: string
+  aiSummary: string
+  aiProcessedAt: Date
   createdAt: Date
 }
+
+export type MedicalDocument = PatientDocumentInsight
