@@ -5,6 +5,8 @@ import type { ReactNode } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 
+type FlowStep = 'identification' | 'specialty' | 'triage'
+
 const SPECIALTIES: { key: string; label: string; icon: string; price: number }[] = [
   { key: 'CLINICAL_MEDICINE',    label: 'Clínica Médica',       icon: '/clm.png', price: 120 },
   { key: 'PEDIATRICS',           label: 'Pediatria',             icon: '/ped.png', price: 130 },
@@ -32,7 +34,7 @@ const SOFT_BG = {
 }
 
 export default function NovaConsultaPage() {
-  const [isIdentified, setIsIdentified] = useState(false)
+  const [activeStep, setActiveStep] = useState<FlowStep>('identification')
   const [mode, setMode] = useState<'register' | 'login'>('register')
   const [patientName, setPatientName] = useState('')
   const [email, setEmail] = useState('')
@@ -40,13 +42,18 @@ export default function NovaConsultaPage() {
   const [password, setPassword] = useState('')
   const [acceptedTerms, setAcceptedTerms] = useState(false)
   const [selectedSpecialty, setSelectedSpecialty] = useState(SPECIALTIES[0].key)
+  const [symptoms, setSymptoms] = useState('')
+  const [duration, setDuration] = useState('Hoje')
+  const [severity, setSeverity] = useState(3)
 
+  const selected = SPECIALTIES.find((specialty) => specialty.key === selectedSpecialty) ?? SPECIALTIES[0]
   const canCreateAccount =
     patientName.trim().length > 2 &&
     email.includes('@') &&
     phone.trim().length >= 10 &&
     password.length >= 6 &&
     acceptedTerms
+  const canContinueTriage = symptoms.trim().length >= 12
 
   return (
     <main className="min-h-screen" style={{ backgroundColor: '#F8FAFC', color: N, fontFamily: "'Inter', system-ui, sans-serif" }}>
@@ -60,12 +67,14 @@ export default function NovaConsultaPage() {
           <div className="mb-8">
             <p className="text-xs font-semibold" style={{ color: T }}>Nova consulta</p>
             <h1 className="mt-2 text-3xl font-bold" style={{ color: N }}>
-              {isIdentified ? 'Escolha a especialidade da consulta' : 'Antes de começar, identifique-se'}
+              {activeStep === 'identification' && 'Antes de começar, identifique-se'}
+              {activeStep === 'specialty' && 'Escolha a especialidade da consulta'}
+              {activeStep === 'triage' && 'Conte o que você está sentindo'}
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed" style={{ color: '#64748B' }}>
-              {isIdentified
-                ? 'Agora selecione o tipo de atendimento desejado para continuar o agendamento.'
-                : 'Para proteger seus dados de saúde e manter seu histórico de atendimento, a consulta começa com login ou cadastro do paciente.'}
+              {activeStep === 'identification' && 'Para proteger seus dados de saúde e manter seu histórico de atendimento, a consulta começa com login ou cadastro do paciente.'}
+              {activeStep === 'specialty' && 'Agora selecione o tipo de atendimento desejado para continuar o agendamento.'}
+              {activeStep === 'triage' && 'Essas informações ajudam o médico a se preparar antes da consulta.'}
             </p>
           </div>
 
@@ -73,9 +82,9 @@ export default function NovaConsultaPage() {
             <strong>Atenção:</strong> este serviço não é indicado para emergências médicas. Em caso de risco imediato à vida, ligue <strong>192 (SAMU)</strong>.
           </div>
 
-          <Progress isIdentified={isIdentified} />
+          <Progress activeStep={activeStep} />
 
-          {!isIdentified && (
+          {activeStep === 'identification' && (
             <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
               <section className="rounded-2xl bg-white p-6 shadow-sm" style={{ border: '1px solid #E2E8F0' }}>
                 <div className="mb-5 inline-flex rounded-xl bg-slate-100 p-1">
@@ -134,7 +143,7 @@ export default function NovaConsultaPage() {
                     <button
                       type="button"
                       disabled={!canCreateAccount}
-                      onClick={() => setIsIdentified(true)}
+                      onClick={() => setActiveStep('specialty')}
                       className="mt-5 rounded-xl px-6 py-3 text-sm font-semibold text-white transition-all disabled:cursor-not-allowed disabled:opacity-50"
                       style={{ backgroundColor: T, boxShadow: `0 4px 16px ${T}35` }}
                     >
@@ -160,7 +169,7 @@ export default function NovaConsultaPage() {
                     <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
                       <button
                         type="button"
-                        onClick={() => setIsIdentified(true)}
+                        onClick={() => setActiveStep('specialty')}
                         className="rounded-xl px-6 py-3 text-sm font-semibold text-white transition-all hover:opacity-90"
                         style={{ backgroundColor: T, boxShadow: `0 4px 16px ${T}35` }}
                       >
@@ -185,7 +194,7 @@ export default function NovaConsultaPage() {
             </div>
           )}
 
-          {isIdentified && (
+          {activeStep === 'specialty' && (
             <section className="mt-8">
               <div className="mb-5 flex items-center justify-between gap-4">
                 <div>
@@ -236,6 +245,92 @@ export default function NovaConsultaPage() {
                 </div>
                 <span className="text-sm font-semibold" style={{ color: T }}>Em breve</span>
               </button>
+
+              <div className="mt-6 flex flex-col-reverse gap-3 border-t pt-5 sm:flex-row sm:items-center sm:justify-between" style={{ borderColor: '#DDE7EE' }}>
+                <button
+                  type="button"
+                  onClick={() => setActiveStep('identification')}
+                  className="rounded-xl px-5 py-3 text-sm font-semibold transition-all hover:bg-white"
+                  style={{ border: '1px solid #DDE7EE', color: N }}
+                >
+                  Voltar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveStep('triage')}
+                  className="rounded-xl px-6 py-3 text-sm font-semibold text-white transition-all hover:opacity-90"
+                  style={{ backgroundColor: T, boxShadow: `0 4px 16px ${T}35` }}
+                >
+                  Continuar para pré-triagem
+                </button>
+              </div>
+            </section>
+          )}
+
+          {activeStep === 'triage' && (
+            <section className="mt-8 rounded-2xl bg-white p-6 shadow-sm" style={{ border: '1px solid #E2E8F0' }}>
+              <div className="mb-6">
+                <p className="text-xs font-semibold" style={{ color: T }}>{selected.label}</p>
+                <h2 className="mt-2 text-xl font-bold" style={{ color: N }}>Pré-triagem</h2>
+                <p className="mt-1 text-sm" style={{ color: '#64748B' }}>
+                  Responda algumas perguntas rápidas para orientar o atendimento médico.
+                </p>
+              </div>
+
+              <div className="grid gap-5">
+                <Field label="Descreva seus sintomas principais">
+                  <textarea
+                    value={symptoms}
+                    onChange={(event) => setSymptoms(event.target.value)}
+                    className="input-field min-h-[130px] resize-none"
+                    placeholder="Ex.: dor de garganta, febre baixa e tosse há dois dias..."
+                  />
+                  <p className="mt-1 text-xs" style={{ color: symptoms.trim().length >= 12 ? T : '#94A3B8' }}>
+                    Mínimo recomendado: 12 caracteres.
+                  </p>
+                </Field>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field label="Quando começou?">
+                    <select value={duration} onChange={(event) => setDuration(event.target.value)} className="input-field">
+                      <option>Hoje</option>
+                      <option>2 a 3 dias</option>
+                      <option>4 a 7 dias</option>
+                      <option>Mais de uma semana</option>
+                    </select>
+                  </Field>
+
+                  <Field label={`Intensidade: ${severity}/5`}>
+                    <input
+                      type="range"
+                      min="1"
+                      max="5"
+                      value={severity}
+                      onChange={(event) => setSeverity(Number(event.target.value))}
+                      className="w-full accent-[#17B890]"
+                    />
+                  </Field>
+                </div>
+              </div>
+
+              <div className="mt-6 flex flex-col-reverse gap-3 border-t pt-5 sm:flex-row sm:items-center sm:justify-between" style={{ borderColor: '#DDE7EE' }}>
+                <button
+                  type="button"
+                  onClick={() => setActiveStep('specialty')}
+                  className="rounded-xl px-5 py-3 text-sm font-semibold transition-all hover:bg-slate-50"
+                  style={{ border: '1px solid #DDE7EE', color: N }}
+                >
+                  Voltar para especialidade
+                </button>
+                <button
+                  type="button"
+                  disabled={!canContinueTriage}
+                  className="rounded-xl px-6 py-3 text-sm font-semibold text-white transition-all disabled:cursor-not-allowed disabled:opacity-50"
+                  style={{ backgroundColor: T, boxShadow: `0 4px 16px ${T}35` }}
+                >
+                  Continuar para documentos
+                </button>
+              </div>
             </section>
           )}
         </div>
@@ -262,9 +357,9 @@ export default function NovaConsultaPage() {
   )
 }
 
-function Progress({ isIdentified }: { isIdentified: boolean }) {
+function Progress({ activeStep }: { activeStep: FlowStep }) {
   const steps = ['Identificação', 'Especialidade', 'Pré-triagem', 'Documentos', 'Pagamento', 'Consulta']
-  const activeIndex = isIdentified ? 1 : 0
+  const activeIndex = activeStep === 'identification' ? 0 : activeStep === 'specialty' ? 1 : 2
 
   return (
     <div className="mb-8 flex flex-wrap items-center gap-2 text-sm">
