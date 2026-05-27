@@ -5,7 +5,9 @@ import type { ReactNode } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 
-type FlowStep = 'identification' | 'specialty' | 'triage'
+type FlowStep = 'identification' | 'specialty' | 'triage' | 'documents'
+
+const MIN_SYMPTOMS_LENGTH = 50
 
 const SPECIALTIES: { key: string; label: string; icon: string; price: number }[] = [
   { key: 'CLINICAL_MEDICINE',    label: 'Clínica Médica',       icon: '/clm.png', price: 120 },
@@ -52,13 +54,14 @@ export default function NovaConsultaPage() {
   const [isPregnant, setIsPregnant] = useState(false)
 
   const selected = SPECIALTIES.find((specialty) => specialty.key === selectedSpecialty) ?? SPECIALTIES[0]
+  const symptomsLength = symptoms.trim().length
   const canCreateAccount =
     patientName.trim().length > 2 &&
     email.includes('@') &&
     phone.trim().length >= 10 &&
     password.length >= 6 &&
     acceptedTerms
-  const canContinueTriage = symptoms.trim().length >= 12
+  const canContinueTriage = symptomsLength >= MIN_SYMPTOMS_LENGTH
 
   return (
     <main className="min-h-screen" style={{ backgroundColor: '#F8FAFC', color: N, fontFamily: "'Inter', system-ui, sans-serif" }}>
@@ -75,11 +78,13 @@ export default function NovaConsultaPage() {
               {activeStep === 'identification' && 'Antes de começar, identifique-se'}
               {activeStep === 'specialty' && 'Escolha a especialidade da consulta'}
               {activeStep === 'triage' && 'Conte o que você está sentindo'}
+              {activeStep === 'documents' && 'Envie documentos e exames'}
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed" style={{ color: '#64748B' }}>
               {activeStep === 'identification' && 'Para proteger seus dados de saúde e manter seu histórico de atendimento, a consulta começa com login ou cadastro do paciente.'}
               {activeStep === 'specialty' && 'Agora selecione o tipo de atendimento desejado para continuar o agendamento.'}
               {activeStep === 'triage' && 'Essas informações ajudam o médico a se preparar antes da consulta.'}
+              {activeStep === 'documents' && 'Anexe laudos, exames, receitas ou imagens que possam ajudar o médico. Esta etapa é opcional.'}
             </p>
           </div>
 
@@ -251,24 +256,12 @@ export default function NovaConsultaPage() {
                 <span className="text-sm font-semibold" style={{ color: T }}>Em breve</span>
               </button>
 
-              <div className="mt-6 flex flex-col-reverse gap-3 border-t pt-5 sm:flex-row sm:items-center sm:justify-between" style={{ borderColor: '#DDE7EE' }}>
-                <button
-                  type="button"
-                  onClick={() => setActiveStep('identification')}
-                  className="rounded-xl px-5 py-3 text-sm font-semibold transition-all hover:bg-white"
-                  style={{ border: '1px solid #DDE7EE', color: N }}
-                >
-                  Voltar
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveStep('triage')}
-                  className="rounded-xl px-6 py-3 text-sm font-semibold text-white transition-all hover:opacity-90"
-                  style={{ backgroundColor: T, boxShadow: `0 4px 16px ${T}35` }}
-                >
-                  Continuar para pré-triagem
-                </button>
-              </div>
+              <StepActions
+                backLabel="Voltar"
+                nextLabel="Continuar para pré-triagem"
+                onBack={() => setActiveStep('identification')}
+                onNext={() => setActiveStep('triage')}
+              />
             </section>
           )}
 
@@ -288,10 +281,10 @@ export default function NovaConsultaPage() {
                     value={symptoms}
                     onChange={(event) => setSymptoms(event.target.value)}
                     className="input-field min-h-[130px] resize-none"
-                    placeholder="Ex.: dor de garganta, febre baixa e tosse há dois dias..."
+                    placeholder="Ex.: dor de garganta, febre baixa e tosse há dois dias, quando piora, se tomou algum remédio e se houve contato com pessoas doentes..."
                   />
-                  <p className="mt-1 text-xs" style={{ color: symptoms.trim().length >= 12 ? T : '#94A3B8' }}>
-                    Mínimo recomendado: 12 caracteres.
+                  <p className="mt-1 text-xs" style={{ color: canContinueTriage ? T : '#94A3B8' }}>
+                    {symptomsLength}/{MIN_SYMPTOMS_LENGTH} caracteres mínimos obrigatórios.
                   </p>
                 </Field>
 
@@ -317,24 +310,39 @@ export default function NovaConsultaPage() {
                 </div>
               </div>
 
-              <div className="mt-6 flex flex-col-reverse gap-3 border-t pt-5 sm:flex-row sm:items-center sm:justify-between" style={{ borderColor: '#DDE7EE' }}>
-                <button
-                  type="button"
-                  onClick={() => setActiveStep('specialty')}
-                  className="rounded-xl px-5 py-3 text-sm font-semibold transition-all hover:bg-slate-50"
-                  style={{ border: '1px solid #DDE7EE', color: N }}
-                >
-                  Voltar para especialidade
-                </button>
-                <button
-                  type="button"
-                  disabled={!canContinueTriage}
-                  className="rounded-xl px-6 py-3 text-sm font-semibold text-white transition-all disabled:cursor-not-allowed disabled:opacity-50"
-                  style={{ backgroundColor: T, boxShadow: `0 4px 16px ${T}35` }}
-                >
-                  Continuar para documentos
-                </button>
+              <StepActions
+                backLabel="Voltar para especialidade"
+                nextLabel="Continuar para documentos"
+                onBack={() => setActiveStep('specialty')}
+                onNext={() => setActiveStep('documents')}
+                nextDisabled={!canContinueTriage}
+              />
+            </section>
+          )}
+
+          {activeStep === 'documents' && (
+            <section className="mt-8 rounded-2xl bg-white p-6 shadow-sm" style={{ border: '1px solid #E2E8F0' }}>
+              <div className="mb-6">
+                <p className="text-xs font-semibold" style={{ color: T }}>{selected.label}</p>
+                <h2 className="mt-2 text-xl font-bold" style={{ color: N }}>Documentos</h2>
+                <p className="mt-1 text-sm" style={{ color: '#64748B' }}>
+                  Se tiver exames, receitas, fotos ou laudos relacionados, você poderá anexá-los aqui antes do pagamento.
+                </p>
               </div>
+
+              <div className="rounded-2xl border-2 border-dashed p-8 text-center" style={{ borderColor: '#BFEDE2', backgroundColor: '#F8FFFE' }}>
+                <p className="text-sm font-semibold" style={{ color: N }}>Upload de documentos</p>
+                <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed" style={{ color: '#64748B' }}>
+                  Esta etapa já está preparada no fluxo. Na próxima fase, conectamos o envio real de arquivos e a lista de anexos.
+                </p>
+              </div>
+
+              <StepActions
+                backLabel="Voltar para pré-triagem"
+                nextLabel="Continuar para pagamento"
+                onBack={() => setActiveStep('triage')}
+                onNext={() => undefined}
+              />
             </section>
           )}
         </div>
@@ -363,7 +371,7 @@ export default function NovaConsultaPage() {
 
 function Progress({ activeStep }: { activeStep: FlowStep }) {
   const steps = ['Identificação', 'Especialidade', 'Pré-triagem', 'Documentos', 'Pagamento', 'Consulta']
-  const activeIndex = activeStep === 'identification' ? 0 : activeStep === 'specialty' ? 1 : 2
+  const activeIndex = activeStep === 'identification' ? 0 : activeStep === 'specialty' ? 1 : activeStep === 'triage' ? 2 : 3
 
   return (
     <div className="mb-8 flex flex-wrap items-center gap-2 text-sm">
@@ -411,5 +419,41 @@ function Toggle({ checked, label, onChange }: { checked: boolean; label: string;
         <span className="h-5 w-5 rounded-full bg-white transition-all" style={{ transform: checked ? 'translateX(20px)' : 'translateX(0)' }} />
       </span>
     </button>
+  )
+}
+
+function StepActions({
+  backLabel,
+  nextLabel,
+  onBack,
+  onNext,
+  nextDisabled = false,
+}: {
+  backLabel: string
+  nextLabel: string
+  onBack: () => void
+  onNext: () => void
+  nextDisabled?: boolean
+}) {
+  return (
+    <div className="mt-6 flex flex-col-reverse gap-3 border-t pt-5 sm:flex-row sm:items-center sm:justify-between" style={{ borderColor: '#DDE7EE' }}>
+      <button
+        type="button"
+        onClick={onBack}
+        className="rounded-xl px-5 py-3 text-sm font-semibold transition-all hover:bg-slate-50"
+        style={{ border: '1px solid #DDE7EE', color: N }}
+      >
+        {backLabel}
+      </button>
+      <button
+        type="button"
+        onClick={onNext}
+        disabled={nextDisabled}
+        className="rounded-xl px-6 py-3 text-sm font-semibold text-white transition-all disabled:cursor-not-allowed disabled:opacity-50"
+        style={{ backgroundColor: T, boxShadow: `0 4px 16px ${T}35` }}
+      >
+        {nextLabel}
+      </button>
+    </div>
   )
 }
