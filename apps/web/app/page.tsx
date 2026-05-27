@@ -65,9 +65,13 @@ function Header() {
 
         {/* Actions */}
         <div className="flex items-center gap-3">
-          <Link href="/consulta/nova" className="text-sm font-semibold px-4 py-2 rounded-lg text-white transition-all hover:opacity-90"
+          <Link href="/painel/medico" className="text-sm font-semibold px-4 py-2 rounded-lg transition-all hover:bg-slate-50"
+            style={{ border: '1.5px solid #E2E8F0', color: N }}>
+            Área do Médico
+          </Link>
+          <Link href="/painel/paciente" className="text-sm font-semibold px-4 py-2 rounded-lg text-white transition-all hover:opacity-90"
             style={{ backgroundColor: T }}>
-            Agendar consulta
+            Área do Paciente
           </Link>
         </div>
       </div>
