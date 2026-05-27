@@ -18,15 +18,21 @@ register() {
 }
 
 register "Paciente" '{
+  "fullName": "Paciente Teste",
   "email": "paciente@teste.com",
   "password": "Teste@123",
-  "role": "PATIENT"
+  "role": "PATIENT",
+  "cpf": "111.111.111-11",
+  "phone": "(11) 91111-1111"
 }'
 
 register "Médico" '{
+  "fullName": "Dr. Médico Teste",
   "email": "medico@teste.com",
   "password": "Teste@123",
-  "role": "DOCTOR"
+  "role": "DOCTOR",
+  "cpf": "222.222.222-22",
+  "phone": "(11) 92222-2222"
 }'
 
 echo "=== Credenciais ==="
