@@ -2,6 +2,66 @@ import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import OpenAI from 'openai'
 
+const documentSummaryFormat = {
+  type: 'json_schema' as const,
+  json_schema: {
+    name: 'document_summary',
+    strict: true,
+    schema: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        resumo: { type: 'string' },
+        medicamentos: { type: 'array', items: { type: 'string' } },
+        alergias: { type: 'array', items: { type: 'string' } },
+        condicoes_registradas: { type: 'array', items: { type: 'string' } },
+        exames_e_resultados: { type: 'array', items: { type: 'string' } },
+        datas_relevantes: { type: 'array', items: { type: 'string' } },
+        observacoes_para_o_medico: { type: 'array', items: { type: 'string' } },
+        limitacoes_da_leitura: { type: 'string' },
+      },
+      required: [
+        'resumo',
+        'medicamentos',
+        'alergias',
+        'condicoes_registradas',
+        'exames_e_resultados',
+        'datas_relevantes',
+        'observacoes_para_o_medico',
+        'limitacoes_da_leitura',
+      ],
+    },
+  },
+}
+
+const consultationPreparationFormat = {
+  type: 'json_schema' as const,
+  json_schema: {
+    name: 'consultation_preparation',
+    strict: true,
+    schema: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        queixa_principal: { type: 'string' },
+        pontos_de_atencao: { type: 'array', items: { type: 'string' } },
+        respostas_objetivas: { type: 'array', items: { type: 'string' } },
+        documentos_resumidos: { type: 'array', items: { type: 'string' } },
+        perguntas_sugeridas_para_o_medico: { type: 'array', items: { type: 'string' } },
+        limitacoes: { type: 'string' },
+      },
+      required: [
+        'queixa_principal',
+        'pontos_de_atencao',
+        'respostas_objetivas',
+        'documentos_resumidos',
+        'perguntas_sugeridas_para_o_medico',
+        'limitacoes',
+      ],
+    },
+  },
+}
+
 // A IA NAO realiza diagnostico. Apenas organiza dados para apoiar o medico.
 @Injectable()
 export class AiService {
@@ -14,7 +74,7 @@ export class AiService {
   async summarizeDocument(text: string): Promise<string> {
     const response = await this.openai.chat.completions.create({
       model: this.config.get('OPENAI_MODEL', 'gpt-4o'),
-      response_format: { type: 'json_object' },
+      response_format: documentSummaryFormat,
       messages: [
         {
           role: 'system',
@@ -22,7 +82,6 @@ export class AiService {
             'Voce e um assistente de organizacao documental medica.',
             'Sua funcao e APENAS organizar informacoes presentes no texto extraido por OCR/parser.',
             'NAO faca diagnosticos. NAO sugira condutas clinicas. NAO interprete resultados.',
-            'Responda somente em JSON valido com as chaves: resumo, medicamentos, alergias, condicoes_registradas, exames_e_resultados, datas_relevantes, observacoes_para_o_medico, limitacoes_da_leitura.',
             'Quando uma informacao nao existir no texto, use array vazio ou string vazia.',
           ].join(' '),
         },
@@ -47,14 +106,13 @@ export class AiService {
   }): Promise<string> {
     const response = await this.openai.chat.completions.create({
       model: this.config.get('OPENAI_MODEL', 'gpt-4o'),
-      response_format: { type: 'json_object' },
+      response_format: consultationPreparationFormat,
       messages: [
         {
           role: 'system',
           content: [
             'Voce organiza uma pre-triagem para leitura do medico antes da teleconsulta.',
             'NAO faca diagnostico. NAO classifique gravidade. NAO recomende tratamento.',
-            'Responda somente em JSON valido com as chaves: queixa_principal, pontos_de_atencao, respostas_objetivas, documentos_resumidos, perguntas_sugeridas_para_o_medico, limitacoes.',
           ].join(' '),
         },
         {
