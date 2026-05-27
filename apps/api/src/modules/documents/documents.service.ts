@@ -7,6 +7,15 @@ import { AiService } from '../ai/ai.service'
 
 const AI_ELIGIBLE_TYPES = ['LAB_RESULT', 'MEDICAL_REPORT', 'PRESCRIPTION', 'CLINICAL_REPORT', 'OTHER']
 
+type ConsultationPreparationInput = {
+  specialty: string
+  symptoms: string
+  symptomDuration?: string
+  flags: Record<string, boolean>
+  documentSummaries: string[]
+  extractedTexts?: string[]
+}
+
 @Injectable()
 export class DocumentsService {
   constructor(
@@ -42,6 +51,39 @@ export class DocumentsService {
     })
 
     return this.repo.save(insight)
+  }
+
+  async processTemporaryDocument(file: Express.Multer.File, type: string) {
+    if (!AI_ELIGIBLE_TYPES.includes(type)) {
+      throw new BadRequestException('Tipo de documento invalido.')
+    }
+
+    const extractedText = await this.extractionService.extractText(file)
+    const aiSummary = await this.aiService.summarizeDocument(extractedText)
+
+    return {
+      type,
+      extractedText,
+      aiSummary,
+      processedAt: new Date().toISOString(),
+      originalFileStored: false,
+    }
+  }
+
+  async prepareConsultationSummary(input: ConsultationPreparationInput) {
+    const summary = await this.aiService.summarizeConsultationPreparation({
+      specialty: input.specialty,
+      symptoms: input.symptoms,
+      symptomDuration: input.symptomDuration,
+      flags: input.flags,
+      documentSummaries: input.documentSummaries,
+      extractedTexts: input.extractedTexts ?? [],
+    })
+
+    return {
+      summary,
+      generatedAt: new Date().toISOString(),
+    }
   }
 
   findByConsultation(consultationId: string) {
