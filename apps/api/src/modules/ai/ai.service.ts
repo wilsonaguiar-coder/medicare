@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import OpenAI from 'openai'
 
-// A IA NÃO realiza diagnóstico. Apenas organiza e resume documentos.
+// A IA NAO realiza diagnostico. Apenas organiza dados para apoiar o medico.
 @Injectable()
 export class AiService {
   private readonly openai: OpenAI
@@ -14,27 +14,59 @@ export class AiService {
   async summarizeDocument(text: string): Promise<string> {
     const response = await this.openai.chat.completions.create({
       model: this.config.get('OPENAI_MODEL', 'gpt-4o'),
+      response_format: { type: 'json_object' },
       messages: [
         {
           role: 'system',
           content: [
-            'Você é um assistente de organização documental médica.',
-            'Sua função é APENAS extrair e organizar informações presentes no documento.',
-            'NÃO faça diagnósticos. NÃO sugira condutas clínicas. NÃO interprete resultados.',
-            'Organize: medicamentos mencionados, alergias, doenças registradas, resultados laboratoriais (apenas valores), datas relevantes.',
-            'Responda em português, de forma objetiva e estruturada.',
+            'Voce e um assistente de organizacao documental medica.',
+            'Sua funcao e APENAS organizar informacoes presentes no texto extraido por OCR/parser.',
+            'NAO faca diagnosticos. NAO sugira condutas clinicas. NAO interprete resultados.',
+            'Responda somente em JSON valido com as chaves: resumo, medicamentos, alergias, condicoes_registradas, exames_e_resultados, datas_relevantes, observacoes_para_o_medico, limitacoes_da_leitura.',
+            'Quando uma informacao nao existir no texto, use array vazio ou string vazia.',
           ].join(' '),
         },
         {
           role: 'user',
-          content: `Organize as informações do seguinte documento médico:\n\n${text}`,
+          content: `Organize as informacoes do seguinte documento medico. Use apenas o texto fornecido.\n\n${text}`,
         },
       ],
-      max_tokens: 800,
+      max_tokens: 1000,
       temperature: 0.1,
     })
 
-    return response.choices[0]?.message?.content ?? ''
+    return response.choices[0]?.message?.content ?? '{}'
+  }
+
+  async summarizeConsultationPreparation(input: {
+    specialty: string
+    symptoms: string
+    symptomDuration?: string
+    flags: Record<string, boolean>
+    documentSummaries: string[]
+  }): Promise<string> {
+    const response = await this.openai.chat.completions.create({
+      model: this.config.get('OPENAI_MODEL', 'gpt-4o'),
+      response_format: { type: 'json_object' },
+      messages: [
+        {
+          role: 'system',
+          content: [
+            'Voce organiza uma pre-triagem para leitura do medico antes da teleconsulta.',
+            'NAO faca diagnostico. NAO classifique gravidade. NAO recomende tratamento.',
+            'Responda somente em JSON valido com as chaves: queixa_principal, pontos_de_atencao, respostas_objetivas, documentos_resumidos, perguntas_sugeridas_para_o_medico, limitacoes.',
+          ].join(' '),
+        },
+        {
+          role: 'user',
+          content: JSON.stringify(input),
+        },
+      ],
+      max_tokens: 1200,
+      temperature: 0.1,
+    })
+
+    return response.choices[0]?.message?.content ?? '{}'
   }
 
   async suggestAnamnesisTemplate(chiefComplaint: string, specialty: string): Promise<string> {
@@ -44,10 +76,10 @@ export class AiService {
         {
           role: 'system',
           content: [
-            'Você é um assistente de documentação clínica.',
-            'Sugira apenas um modelo de anamnese estruturado para o médico preencher.',
-            'NÃO faça diagnósticos. NÃO sugira condutas.',
-            'O médico é o único responsável pelas decisões clínicas.',
+            'Voce e um assistente de documentacao clinica.',
+            'Sugira apenas um modelo de anamnese estruturado para o medico preencher.',
+            'NAO faca diagnosticos. NAO sugira condutas.',
+            'O medico e o unico responsavel pelas decisoes clinicas.',
           ].join(' '),
         },
         {
