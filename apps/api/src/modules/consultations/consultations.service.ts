@@ -10,24 +10,24 @@ const PLATFORM_COMMISSION = 0.2
 type SaveAiSummaryInput = {
   consultationId: string
   patientId: string
-  doctorId?: string
+  doctorId?: string | undefined
   summary: {
-    queixa_principal?: string
-    pontos_de_atencao?: string[]
-    hipoteses_clinicas?: string[]
-    cid10_provaveis?: string[]
-    respostas_objetivas?: string[]
-    documentos_resumidos?: string[]
-    perguntas_sugeridas_para_o_medico?: string[]
-    limitacoes?: string
+    queixa_principal?: string | undefined
+    pontos_de_atencao?: string[] | undefined
+    hipoteses_clinicas?: string[] | undefined
+    cid10_provaveis?: string[] | undefined
+    respostas_objetivas?: string[] | undefined
+    documentos_resumidos?: string[] | undefined
+    perguntas_sugeridas_para_o_medico?: string[] | undefined
+    limitacoes?: string | undefined
   }
-  sourceSymptoms?: string
-  sourceSymptomDuration?: string
-  sourceFlags?: Record<string, boolean>
-  sourceDocumentSummaryIds?: string[]
-  model?: string
-  promptVersion?: string
-  generatedAt?: Date
+  sourceSymptoms?: string | undefined
+  sourceSymptomDuration?: string | undefined
+  sourceFlags?: Record<string, boolean> | undefined
+  sourceDocumentSummaryIds?: string[] | undefined
+  model?: string | undefined
+  promptVersion?: string | undefined
+  generatedAt?: Date | undefined
 }
 
 @Injectable()
