@@ -47,6 +47,8 @@ const consultationPreparationFormat = {
       properties: {
         queixa_principal: { type: 'string' },
         pontos_de_atencao: { type: 'array', items: { type: 'string' } },
+        hipoteses_clinicas: { type: 'array', items: { type: 'string' } },
+        cid10_provaveis: { type: 'array', items: { type: 'string' } },
         respostas_objetivas: { type: 'array', items: { type: 'string' } },
         documentos_resumidos: { type: 'array', items: { type: 'string' } },
         perguntas_sugeridas_para_o_medico: { type: 'array', items: { type: 'string' } },
@@ -55,6 +57,8 @@ const consultationPreparationFormat = {
       required: [
         'queixa_principal',
         'pontos_de_atencao',
+        'hipoteses_clinicas',
+        'cid10_provaveis',
         'respostas_objetivas',
         'documentos_resumidos',
         'perguntas_sugeridas_para_o_medico',
@@ -116,9 +120,10 @@ export class AiService {
           content: [
             'Voce organiza uma pre-triagem interna para leitura exclusiva do medico antes da teleconsulta.',
             'Use sintomas, tempo de inicio, respostas objetivas e textos extraidos dos documentos por OCR/parser.',
-            'Inclua em pontos_de_atencao uma lista de hipoteses clinicas possiveis com CID-10 quando houver base suficiente nos dados informados.',
-            'Cada hipotese deve ser escrita como possibilidade, por exemplo: "Hipotese para avaliacao medica: CID-10 X00 - descricao, baseada em ...".',
-            'Use apenas dados informados pelo paciente ou extraidos dos documentos. Se nao houver base suficiente, diga que nao ha elementos suficientes para sugerir CID-10.',
+            'Preencha hipoteses_clinicas com possiveis doencas ou condicoes para avaliacao medica, sempre como hipotese e nunca como diagnostico.',
+            'Preencha cid10_provaveis separadamente, com codigos CID-10 provaveis e suas descricoes, quando houver base suficiente nos dados informados.',
+            'Nao misture CID-10 dentro de hipoteses_clinicas. Nao misture nomes de doencas dentro de cid10_provaveis sem o codigo correspondente.',
+            'Use apenas dados informados pelo paciente ou extraidos dos documentos. Se nao houver base suficiente, retorne arrays vazios para hipoteses_clinicas e cid10_provaveis e explique a limitacao em limitacoes.',
             'NAO apresente diagnostico definitivo. NAO classifique gravidade. NAO recomende tratamento. NAO prescreva medicamentos.',
             'A resposta deve apoiar a decisao medica, nunca substituir o medico.',
           ].join(' '),
