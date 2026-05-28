@@ -153,7 +153,7 @@ export default function PainelMedicoPage() {
       style={{ backgroundColor: '#F1F5F9', fontFamily: "'Inter', system-ui, sans-serif" }}>
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header />
+        <Header onLogout={() => { localStorage.removeItem('medicare_doctor_token'); setDoctorToken(null) }} />
         <main className="flex-1 flex overflow-hidden gap-4 p-4">
           <LeftPanel onJoinRoom={handleJoinRoom} />
           <CenterPanel
@@ -239,7 +239,7 @@ function Sidebar() {
 }
 
 /* ── HEADER ── */
-function Header() {
+function Header({ onLogout }: { onLogout: () => void }) {
   return (
     <header className="flex items-center justify-between px-6 py-3 bg-white flex-shrink-0"
       style={{ borderBottom: '1px solid #E2E8F0' }}>
@@ -249,13 +249,18 @@ function Header() {
           <IconBell />
           <span className="absolute top-1 right-1 h-2 w-2 rounded-full" style={{ backgroundColor: T }} />
         </button>
-        <button className="relative p-2 rounded-lg hover:bg-slate-50">
-          <IconBell />
-        </button>
         <div className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold text-white"
           style={{ background: `linear-gradient(135deg, #1a6bb5, ${T})` }}>
           GN
         </div>
+        <button onClick={onLogout}
+          className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all hover:bg-red-50"
+          style={{ border: '1px solid #FCA5A5', color: '#DC2626' }}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
+          Sair
+        </button>
       </div>
     </header>
   )
