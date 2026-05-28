@@ -53,6 +53,7 @@ export class ConsultationsService {
       totalAmount,
       platformFee,
       doctorAmount: totalAmount - platformFee,
+      videoRoomId: data.videoRoomId ?? null,
       status: 'PENDING_PAYMENT',
     })
     return this.consultationRepo.save(consultation)
