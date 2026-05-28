@@ -566,7 +566,23 @@ export default function NovaConsultaPage() {
                     </div>
                   )}
                   <div className="grid gap-4 md:grid-cols-3"><SummaryCard label="Status" value="Aguardando medico" /><SummaryCard label="Pre-triagem" value="Registrada" /><SummaryCard label="Documentos" value={`${documents.length} processado${documents.length === 1 ? '' : 's'}`} /></div>
-                  <AiSummaryCard status={summaryStatus} summary={consultationSummary} error={summaryError} />
+                  <div className="mt-6 rounded-2xl p-5 flex items-start gap-4" style={{ backgroundColor: '#F0FDF9', border: `1px solid ${T}30` }}>
+                    <div className="h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: T }}>
+                      <span style={{ color: 'white', fontSize: 14 }}>✦</span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold" style={{ color: N }}>
+                        {summaryStatus === 'loading' ? 'Preparando informações para o médico...' : summaryStatus === 'ready' ? 'Informações preparadas para o médico' : 'Resumo de apoio ao médico'}
+                      </p>
+                      <p className="mt-1 text-xs leading-relaxed" style={{ color: '#475569' }}>
+                        {summaryStatus === 'loading'
+                          ? 'A IA está organizando seus dados clínicos. Isso leva alguns segundos.'
+                          : summaryStatus === 'ready'
+                          ? 'Seus dados de triagem e documentos foram organizados e estarão disponíveis para o médico durante o atendimento.'
+                          : 'Seus dados de triagem serão enviados ao médico no início da consulta.'}
+                      </p>
+                    </div>
+                  </div>
                   {videoError && (
                     <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{videoError}</div>
                   )}
