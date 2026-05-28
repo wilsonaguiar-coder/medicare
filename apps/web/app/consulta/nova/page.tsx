@@ -65,8 +65,15 @@ export default function NovaConsultaPage() {
   const [patientName, setPatientName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
+  const [cpf, setCpf] = useState('')
   const [password, setPassword] = useState('')
   const [acceptedTerms, setAcceptedTerms] = useState(false)
+  const [authLoading, setAuthLoading] = useState(false)
+  const [authError, setAuthError] = useState('')
+  const [authToken, setAuthToken] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') return localStorage.getItem('medicare_patient_token')
+    return null
+  })
   const [selectedSpecialty, setSelectedSpecialty] = useState(SPECIALTIES[0].key)
   const [symptoms, setSymptoms] = useState('')
   const [duration, setDuration] = useState('Hoje')
@@ -110,8 +117,53 @@ export default function NovaConsultaPage() {
     patientName.trim().length > 2 &&
     email.includes('@') &&
     phone.trim().length >= 10 &&
-    password.length >= 6 &&
+    cpf.replace(/\D/g, '').length === 11 &&
+    password.length >= 8 &&
     acceptedTerms
+
+  async function handleRegister() {
+    if (!canCreateAccount || authLoading) return
+    setAuthLoading(true)
+    setAuthError('')
+    try {
+      const res = await fetch(`${API_BASE}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fullName: patientName, email, phone, cpf: cpf.replace(/\D/g, ''), password, role: 'PATIENT' }),
+      })
+      const data = await res.json() as { accessToken?: string; message?: string }
+      if (!res.ok) throw new Error(data.message ?? 'Erro ao criar conta.')
+      localStorage.setItem('medicare_patient_token', data.accessToken!)
+      setAuthToken(data.accessToken!)
+      setActiveStep('specialty')
+    } catch (err) {
+      setAuthError(err instanceof Error ? err.message : 'Erro ao criar conta.')
+    } finally {
+      setAuthLoading(false)
+    }
+  }
+
+  async function handleLogin() {
+    if (!email.includes('@') || password.length < 6 || authLoading) return
+    setAuthLoading(true)
+    setAuthError('')
+    try {
+      const res = await fetch(`${API_BASE}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
+      const data = await res.json() as { accessToken?: string; message?: string }
+      if (!res.ok) throw new Error(data.message ?? 'Credenciais inválidas.')
+      localStorage.setItem('medicare_patient_token', data.accessToken!)
+      setAuthToken(data.accessToken!)
+      setActiveStep('specialty')
+    } catch (err) {
+      setAuthError(err instanceof Error ? err.message : 'Credenciais inválidas.')
+    } finally {
+      setAuthLoading(false)
+    }
+  }
   const canContinueTriage = symptomsLength >= MIN_SYMPTOMS_LENGTH
   const triageFlags = { hasFever, hasPain, hasShortnessOfBreath, hasAllergy, usesMedication, isPregnant }
 
@@ -230,6 +282,22 @@ export default function NovaConsultaPage() {
       setVideoRoomName(roomName)
       setVideoToken(data.token)
       setVideoServerUrl(data.serverUrl)
+      // Criar registro de consulta no banco se autenticado
+      if (authToken) {
+        fetch(`${API_BASE}/consultations`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+          body: JSON.stringify({
+            specialty: selected.key,
+            chiefComplaint: symptoms.trim().slice(0, 200) || 'Consulta',
+            symptoms,
+            symptomDuration: duration,
+            totalAmount: selected.price,
+            patientName: participantName,
+            videoRoomId: roomName,
+          }),
+        }).catch(() => {})
+      }
       // Notificar médico: sala disponível na fila
       fetch(`${API_BASE}/video/waiting-room`, {
         method: 'POST',
@@ -334,25 +402,31 @@ export default function NovaConsultaPage() {
                       <Field label="Nome completo"><input value={patientName} onChange={(e) => setPatientName(e.target.value)} className="input-field" placeholder="Maria Silva" /></Field>
                       <Field label="Celular"><input value={phone} onChange={(e) => setPhone(e.target.value)} className="input-field" placeholder="(11) 99999-9999" /></Field>
                       <Field label="E-mail"><input value={email} onChange={(e) => setEmail(e.target.value)} className="input-field" type="email" placeholder="voce@email.com" /></Field>
-                      <Field label="Senha"><input value={password} onChange={(e) => setPassword(e.target.value)} className="input-field" type="password" placeholder="Minimo 6 caracteres" /></Field>
+                      <Field label="CPF"><input value={cpf} onChange={(e) => setCpf(e.target.value)} className="input-field" placeholder="000.000.000-00" /></Field>
+                      <Field label="Senha"><input value={password} onChange={(e) => setPassword(e.target.value)} className="input-field" type="password" placeholder="Minimo 8 caracteres" /></Field>
                     </div>
                     <label className="mt-5 flex items-start gap-3 rounded-xl p-4 text-sm" style={{ border: '1px solid #E2E8F0', color: '#475569' }}>
                       <input type="checkbox" checked={acceptedTerms} onChange={(e) => setAcceptedTerms(e.target.checked)} className="mt-0.5 h-4 w-4 accent-[#17B890]" />
                       <span>Li e aceito os termos de uso, a politica de privacidade e entendo que a Medicare nao realiza atendimentos de emergencia.</span>
                     </label>
-                    <button type="button" disabled={!canCreateAccount} onClick={() => setActiveStep('specialty')} className="mt-5 rounded-xl px-6 py-3 text-sm font-semibold text-white transition-all disabled:cursor-not-allowed disabled:opacity-50" style={{ backgroundColor: T, boxShadow: `0 4px 16px ${T}35` }}>Criar conta e continuar</button>
+                    {authError && <p className="mt-3 text-sm text-red-600">{authError}</p>}
+                    <button type="button" disabled={!canCreateAccount || authLoading} onClick={handleRegister} className="mt-5 rounded-xl px-6 py-3 text-sm font-semibold text-white transition-all disabled:cursor-not-allowed disabled:opacity-50" style={{ backgroundColor: T, boxShadow: `0 4px 16px ${T}35` }}>
+                      {authLoading ? 'Criando conta...' : 'Criar conta e continuar'}
+                    </button>
                   </div>
                 ) : (
                   <div>
                     <h2 className="text-xl font-bold" style={{ color: N }}>Entrar na conta do paciente</h2>
                     <p className="mt-1 text-sm" style={{ color: '#64748B' }}>Entre para recuperar seus dados e continuar o agendamento com seguranca.</p>
                     <div className="mt-6 grid gap-4">
-                      <Field label="E-mail"><input className="input-field" type="email" placeholder="voce@email.com" /></Field>
-                      <Field label="Senha"><input className="input-field" type="password" placeholder="Sua senha" /></Field>
+                      <Field label="E-mail"><input value={email} onChange={(e) => setEmail(e.target.value)} className="input-field" type="email" placeholder="voce@email.com" /></Field>
+                      <Field label="Senha"><input value={password} onChange={(e) => setPassword(e.target.value)} className="input-field" type="password" placeholder="Sua senha" /></Field>
                     </div>
+                    {authError && <p className="mt-3 text-sm text-red-600">{authError}</p>}
                     <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
-                      <button type="button" onClick={() => setActiveStep('specialty')} className="rounded-xl px-6 py-3 text-sm font-semibold text-white transition-all hover:opacity-90" style={{ backgroundColor: T, boxShadow: `0 4px 16px ${T}35` }}>Entrar e continuar</button>
-                      <Link href="/auth/login" className="text-sm font-semibold hover:underline" style={{ color: T }}>Entrar pela pagina completa</Link>
+                      <button type="button" disabled={authLoading} onClick={handleLogin} className="rounded-xl px-6 py-3 text-sm font-semibold text-white transition-all hover:opacity-90 disabled:opacity-50" style={{ backgroundColor: T, boxShadow: `0 4px 16px ${T}35` }}>
+                        {authLoading ? 'Entrando...' : 'Entrar e continuar'}
+                      </button>
                     </div>
                   </div>
                 )}

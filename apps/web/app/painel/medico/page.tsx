@@ -10,6 +10,15 @@ const N = '#0A2342'
 const T = '#17B890'
 
 export default function PainelMedicoPage() {
+  const [doctorToken, setDoctorToken] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') return localStorage.getItem('medicare_doctor_token')
+    return null
+  })
+  const [loginEmail, setLoginEmail] = useState('')
+  const [loginPassword, setLoginPassword] = useState('')
+  const [loginLoading, setLoginLoading] = useState(false)
+  const [loginError, setLoginError] = useState('')
+
   const [activeTab, setActiveTab] = useState('anotacoes')
   const [roomCode, setRoomCode] = useState('')
   const [videoToken, setVideoToken] = useState<string | null>(null)
@@ -20,6 +29,75 @@ export default function PainelMedicoPage() {
     patientName: string; specialty: string; aiSummary?: string
     symptoms?: string; symptomDuration?: string; flags?: Record<string, boolean>
   } | null>(null)
+
+  async function handleDoctorLogin() {
+    if (!loginEmail || !loginPassword || loginLoading) return
+    setLoginLoading(true)
+    setLoginError('')
+    try {
+      const res = await fetch(`${API_BASE}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: loginEmail, password: loginPassword }),
+      })
+      const data = await res.json() as { accessToken?: string; user?: { role: string }; message?: string }
+      if (!res.ok) throw new Error(data.message ?? 'Credenciais inválidas.')
+      if (data.user?.role !== 'DOCTOR') throw new Error('Esta conta não é de médico.')
+      localStorage.setItem('medicare_doctor_token', data.accessToken!)
+      setDoctorToken(data.accessToken!)
+    } catch (err) {
+      setLoginError(err instanceof Error ? err.message : 'Erro ao entrar.')
+    } finally {
+      setLoginLoading(false)
+    }
+  }
+
+  if (!doctorToken) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#F1F5F9' }}>
+        <div className="bg-white rounded-2xl p-8 shadow-sm w-full max-w-sm" style={{ border: '1px solid #E2E8F0' }}>
+          <div className="flex items-center gap-3 mb-6">
+            <div className="h-10 w-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: N }}>
+              <span className="text-white font-bold text-sm">M</span>
+            </div>
+            <div>
+              <p className="font-bold text-sm" style={{ color: N }}>Medicare</p>
+              <p className="text-xs" style={{ color: '#94A3B8' }}>Painel do médico</p>
+            </div>
+          </div>
+          <h1 className="text-xl font-bold mb-1" style={{ color: N }}>Entrar</h1>
+          <p className="text-sm mb-6" style={{ color: '#64748B' }}>Acesse com suas credenciais de médico</p>
+          <div className="space-y-4">
+            <div>
+              <label className="text-xs font-medium mb-1 block" style={{ color: '#475569' }}>E-mail</label>
+              <input value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleDoctorLogin()}
+                type="email" placeholder="medico@email.com"
+                className="w-full rounded-xl px-3 py-2.5 text-sm outline-none"
+                style={{ border: '1.5px solid #E2E8F0', color: N }} />
+            </div>
+            <div>
+              <label className="text-xs font-medium mb-1 block" style={{ color: '#475569' }}>Senha</label>
+              <input value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleDoctorLogin()}
+                type="password" placeholder="Sua senha"
+                className="w-full rounded-xl px-3 py-2.5 text-sm outline-none"
+                style={{ border: '1.5px solid #E2E8F0', color: N }} />
+            </div>
+          </div>
+          {loginError && <p className="mt-3 text-sm text-red-600">{loginError}</p>}
+          <button onClick={handleDoctorLogin} disabled={loginLoading || !loginEmail || !loginPassword}
+            className="mt-5 w-full rounded-xl py-3 text-sm font-semibold text-white disabled:opacity-50"
+            style={{ backgroundColor: T }}>
+            {loginLoading ? 'Entrando...' : 'Entrar no painel'}
+          </button>
+          <p className="mt-4 text-xs text-center" style={{ color: '#94A3B8' }}>
+            Credenciais de teste: medico@teste.com / Teste@123
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   async function handleJoinRoom(code?: string, consultationData?: {
     patientName: string; specialty: string; aiSummary?: string

@@ -1,20 +1,29 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common'
+import { Body, Controller, Get, NotFoundException, Param, Post, UseGuards } from '@nestjs/common'
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard'
 import { CurrentUser } from '../../common/decorators/current-user.decorator'
 import { ConsultationsService } from './consultations.service'
+import { PatientsService } from '../patients/patients.service'
 
 @ApiTags('Consultas')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('consultations')
 export class ConsultationsController {
-  constructor(private readonly consultationsService: ConsultationsService) {}
+  constructor(
+    private readonly consultationsService: ConsultationsService,
+    private readonly patientsService: PatientsService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Criar nova solicitação de consulta' })
-  create(@CurrentUser() user: { id: string }, @Body() body: object) {
-    return this.consultationsService.create(user.id, body)
+  async create(@CurrentUser() user: { id: string }, @Body() body: object) {
+    let patient = await this.patientsService.findByUserId(user.id)
+    if (!patient) {
+      patient = await this.patientsService.create({ userId: user.id, fullName: (body as any).patientName ?? 'Paciente' })
+    }
+    if (!patient) throw new NotFoundException('Perfil de paciente não encontrado')
+    return this.consultationsService.create(patient.id, body)
   }
 
   @Get('my')

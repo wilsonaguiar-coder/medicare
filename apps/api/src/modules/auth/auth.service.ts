@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import * as bcrypt from 'bcryptjs'
 import { UsersService } from '../users/users.service'
+import { PatientsService } from '../patients/patients.service'
 import { RegisterDto } from './dto/register.dto'
 
 @Injectable()
@@ -9,11 +10,15 @@ export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
+    private readonly patientsService: PatientsService,
   ) {}
 
   async register(dto: RegisterDto) {
     const passwordHash = await bcrypt.hash(dto.password, 12)
     const user = await this.usersService.create({ ...dto, passwordHash })
+    if (dto.role === 'PATIENT') {
+      await this.patientsService.create({ userId: user.id, fullName: dto.fullName, cpf: dto.cpf, phone: dto.phone })
+    }
     return this.buildTokenResponse(user)
   }
 

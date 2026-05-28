@@ -17,16 +17,16 @@ export class Patient {
   @Column()
   fullName: string
 
-  @Column({ unique: true })
+  @Column({ unique: true, nullable: true })
   cpf: string
 
-  @Column({ type: 'date' })
+  @Column({ type: 'date', nullable: true })
   dateOfBirth: Date
 
-  @Column({ type: 'enum', enum: ['MALE', 'FEMALE', 'OTHER'] })
+  @Column({ type: 'enum', enum: ['MALE', 'FEMALE', 'OTHER'], nullable: true })
   gender: 'MALE' | 'FEMALE' | 'OTHER'
 
-  @Column()
+  @Column({ nullable: true })
   phone: string
 
   @Column({ type: 'jsonb', nullable: true })

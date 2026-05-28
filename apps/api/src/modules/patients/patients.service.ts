@@ -11,6 +11,11 @@ export class PatientsService {
     return this.repo.findOne({ where: { userId } })
   }
 
+  create(data: { userId: string; fullName: string; cpf?: string; phone?: string }) {
+    const patient = this.repo.create(data)
+    return this.repo.save(patient)
+  }
+
   update(userId: string, data: object) {
     return this.repo.update({ userId }, data)
   }
