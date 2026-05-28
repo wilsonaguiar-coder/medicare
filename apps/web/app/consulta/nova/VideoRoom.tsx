@@ -39,9 +39,8 @@ export function VideoRoom({ token, serverUrl, onDisconnect }: VideoRoomProps) {
         <VideoConference />
         <RoomAudioRenderer />
       </LiveKitRoom>
-      {/* Logo sobreposta — troque /logo.png pela versão com fundo transparente */}
-      <div style={{ position: 'absolute', top: 12, left: 16, pointerEvents: 'none', opacity: 0.75, zIndex: 10 }}>
-        <Image src="/logo.png" alt="Medicare" width={80} height={28} style={{ objectFit: 'contain' }} />
+      <div style={{ position: 'absolute', top: 12, left: 16, pointerEvents: 'none', opacity: 0.8, zIndex: 10 }}>
+        <Image src="/lgmda.png" alt="Medicare" width={90} height={32} style={{ objectFit: 'contain' }} />
       </div>
     </div>
   )
