@@ -428,6 +428,28 @@ function CenterPanel({ activeTab, setActiveTab, videoToken, videoServerUrl, room
   )
 }
 
+const SPECIALTY_LABELS: Record<string, string> = {
+  CLINICAL_MEDICINE: 'Clínica Médica', PEDIATRICS: 'Pediatria', DERMATOLOGY: 'Dermatologia',
+  GYNECOLOGY: 'Ginecologia', ORTHOPEDICS: 'Ortopedia', PSYCHIATRY: 'Psiquiatria',
+  NEUROLOGY: 'Neurologia', CARDIOLOGY: 'Cardiologia', ENDOCRINOLOGY: 'Endocrinologia',
+  GASTROENTEROLOGY: 'Gastroenterologia', OTORHINOLARYNGOLOGY: 'Otorrinolaringologia',
+}
+
+type AiSummaryParsed = {
+  queixa_principal?: string
+  pontos_de_atencao?: string[]
+  hipoteses_clinicas?: string[]
+  cid10_provaveis?: string[]
+  respostas_objetivas?: string[]
+  documentos_resumidos?: string[]
+  perguntas_sugeridas_para_o_medico?: string[]
+  limitacoes?: string
+}
+
+function parseAiSummary(raw: string): AiSummaryParsed | null {
+  try { return JSON.parse(raw) as AiSummaryParsed } catch { return null }
+}
+
 /* ── RIGHT PANEL ── */
 function RightPanel({ consultation }: {
   consultation: { patientName: string; specialty: string; aiSummary?: string; symptoms?: string; symptomDuration?: string; flags?: Record<string, boolean> } | null
@@ -436,7 +458,10 @@ function RightPanel({ consultation }: {
     hasFever: 'Febre', hasPain: 'Dor', hasShortnessOfBreath: 'Falta de ar',
     hasAllergy: 'Alergia', usesMedication: 'Usa medicação', isPregnant: 'Gestante',
   }
-  const activeFlags = consultation?.flags ? Object.entries(consultation.flags).filter(([, v]) => v).map(([k]) => flagLabels[k] ?? k) : []
+  const activeFlags = consultation?.flags
+    ? Object.entries(consultation.flags).filter(([, v]) => v).map(([k]) => flagLabels[k] ?? k)
+    : []
+  const parsed = consultation?.aiSummary ? parseAiSummary(consultation.aiSummary) : null
 
   return (
     <div className="flex flex-col gap-4 flex-shrink-0 overflow-y-auto" style={{ width: 280 }}>
@@ -452,12 +477,11 @@ function RightPanel({ consultation }: {
 
         {!consultation ? (
           <p className="text-xs" style={{ color: '#94A3B8' }}>Entre em uma consulta para ver o resumo do paciente.</p>
-        ) : !consultation.aiSummary ? (
-          <p className="text-xs" style={{ color: '#94A3B8' }}>Resumo não disponível para esta consulta.</p>
         ) : (
           <>
+            {/* Queixa + duração */}
             {consultation.symptoms && (
-              <div className="mb-3">
+              <div className="mb-3 rounded-xl p-3" style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0' }}>
                 <p className="text-xs font-semibold mb-1" style={{ color: N }}>Queixa principal</p>
                 <p className="text-xs leading-relaxed" style={{ color: '#475569' }}>{consultation.symptoms}</p>
                 {consultation.symptomDuration && (
@@ -466,6 +490,7 @@ function RightPanel({ consultation }: {
               </div>
             )}
 
+            {/* Flags */}
             {activeFlags.length > 0 && (
               <div className="flex flex-wrap gap-1 mb-3">
                 {activeFlags.map(f => (
@@ -475,12 +500,37 @@ function RightPanel({ consultation }: {
               </div>
             )}
 
-            <div className="rounded-xl p-3" style={{ backgroundColor: '#F8FFFE', border: `1px solid ${T}25` }}>
-              <p className="text-xs font-semibold mb-1" style={{ color: N }}>Resumo da IA</p>
-              <p className="text-xs leading-relaxed whitespace-pre-wrap" style={{ color: '#475569' }}>
-                {consultation.aiSummary}
-              </p>
-            </div>
+            {/* Resumo estruturado */}
+            {parsed ? (
+              <div className="space-y-2">
+                {parsed.pontos_de_atencao && parsed.pontos_de_atencao.length > 0 && (
+                  <SummaryBlock title="Pontos de atenção" items={parsed.pontos_de_atencao} />
+                )}
+                {parsed.hipoteses_clinicas && parsed.hipoteses_clinicas.length > 0 && (
+                  <SummaryBlock title="Hipóteses clínicas" items={parsed.hipoteses_clinicas} accent />
+                )}
+                {parsed.cid10_provaveis && parsed.cid10_provaveis.length > 0 && (
+                  <SummaryBlock title="CID-10 prováveis" items={parsed.cid10_provaveis} />
+                )}
+                {parsed.perguntas_sugeridas_para_o_medico && parsed.perguntas_sugeridas_para_o_medico.length > 0 && (
+                  <SummaryBlock title="Perguntas sugeridas" items={parsed.perguntas_sugeridas_para_o_medico} />
+                )}
+                {parsed.documentos_resumidos && parsed.documentos_resumidos.length > 0 && (
+                  <SummaryBlock title="Documentos" items={parsed.documentos_resumidos} />
+                )}
+                {parsed.limitacoes && (
+                  <p className="text-xs italic" style={{ color: '#94A3B8' }}>{parsed.limitacoes}</p>
+                )}
+              </div>
+            ) : consultation.aiSummary ? (
+              <div className="rounded-xl p-3" style={{ backgroundColor: '#F8FFFE', border: `1px solid ${T}25` }}>
+                <p className="text-xs leading-relaxed whitespace-pre-wrap" style={{ color: '#475569' }}>{consultation.aiSummary}</p>
+              </div>
+            ) : (
+              !consultation.symptoms && activeFlags.length === 0 && (
+                <p className="text-xs" style={{ color: '#94A3B8' }}>Resumo não disponível para esta consulta.</p>
+              )
+            )}
 
             <p className="text-xs mt-2" style={{ color: '#94A3B8' }}>✦ Gerado por IA antes da consulta</p>
           </>
@@ -498,11 +548,24 @@ function RightPanel({ consultation }: {
             </div>
             <div className="flex justify-between text-xs">
               <span style={{ color: '#94A3B8' }}>Especialidade</span>
-              <span className="font-medium" style={{ color: N }}>{consultation.specialty}</span>
+              <span className="font-medium" style={{ color: N }}>{SPECIALTY_LABELS[consultation.specialty] ?? consultation.specialty}</span>
             </div>
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+function SummaryBlock({ title, items, accent = false }: { title: string; items: string[]; accent?: boolean }) {
+  return (
+    <div className="rounded-xl p-3" style={{ backgroundColor: accent ? '#FFF7ED' : '#F8FAFC', border: `1px solid ${accent ? '#FED7AA' : '#E2E8F0'}` }}>
+      <p className="text-xs font-semibold mb-1" style={{ color: accent ? '#C2410C' : N }}>{title}</p>
+      <ul className="space-y-0.5">
+        {items.map((item, i) => (
+          <li key={i} className="text-xs leading-relaxed" style={{ color: '#475569' }}>— {item}</li>
+        ))}
+      </ul>
     </div>
   )
 }
