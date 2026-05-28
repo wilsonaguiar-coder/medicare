@@ -90,6 +90,7 @@ export default function NovaConsultaPage() {
   const [documentProcessing, setDocumentProcessing] = useState(false)
   const [consultationSummary, setConsultationSummary] = useState('')
   const [summaryStatus, setSummaryStatus] = useState<AiStatus>('idle')
+  const [summaryError, setSummaryError] = useState('')
 
   // Availability check
   const [availabilityChecking, setAvailabilityChecking] = useState(false)
@@ -322,6 +323,7 @@ export default function NovaConsultaPage() {
     setActiveStep('consultation')
     setVideoRoomName(`consulta-${selectedSpecialty.toLowerCase()}-${Date.now()}`)
     setSummaryStatus('loading')
+    setSummaryError('')
     try {
       const response = await fetch(`${API_BASE}/documents/test/prepare-consultation`, {
         method: 'POST',
@@ -339,8 +341,9 @@ export default function NovaConsultaPage() {
       const result = await response.json() as { summary: string }
       setConsultationSummary(result.summary)
       setSummaryStatus('ready')
-    } catch {
+    } catch (err) {
       setSummaryStatus('error')
+      setSummaryError(err instanceof Error ? err.message : 'Erro ao gerar resumo da IA.')
     }
   }
 
@@ -637,29 +640,46 @@ export default function NovaConsultaPage() {
                     </div>
                   )}
                   <div className="grid gap-4 md:grid-cols-3"><SummaryCard label="Status" value="Aguardando medico" /><SummaryCard label="Pre-triagem" value="Registrada" /><SummaryCard label="Documentos" value={`${documents.length} processado${documents.length === 1 ? '' : 's'}`} /></div>
-                  <div className="mt-6 rounded-2xl p-5 flex items-start gap-4" style={{ backgroundColor: '#F0FDF9', border: `1px solid ${T}30` }}>
-                    <div className="h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: T }}>
-                      <span style={{ color: 'white', fontSize: 14 }}>✦</span>
+                  {summaryStatus === 'error' ? (
+                    <div className="mt-6 rounded-2xl p-5 flex items-start gap-4" style={{ backgroundColor: '#FFF1F2', border: '1px solid #FECDD3' }}>
+                      <div className="h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#EF4444' }}>
+                        <span style={{ color: 'white', fontSize: 14 }}>!</span>
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold" style={{ color: '#991B1B' }}>Falha ao gerar resumo da IA</p>
+                        <p className="mt-1 text-xs leading-relaxed" style={{ color: '#7F1D1D' }}>
+                          {summaryError || 'Não foi possível gerar o resumo. Você pode tentar novamente ou entrar na consulta assim mesmo — seus dados de triagem serão enviados ao médico.'}
+                        </p>
+                        <button type="button" onClick={prepareConsultationSummary}
+                          className="mt-3 rounded-lg px-3 py-1.5 text-xs font-semibold text-white"
+                          style={{ backgroundColor: '#EF4444' }}>
+                          Tentar novamente
+                        </button>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-semibold" style={{ color: N }}>
-                        {summaryStatus === 'loading' ? 'Preparando informações para o médico...' : summaryStatus === 'ready' ? 'Informações preparadas para o médico' : 'Resumo de apoio ao médico'}
-                      </p>
-                      <p className="mt-1 text-xs leading-relaxed" style={{ color: '#475569' }}>
-                        {summaryStatus === 'loading'
-                          ? 'A IA está organizando seus dados clínicos. Isso leva alguns segundos.'
-                          : summaryStatus === 'ready'
-                          ? 'Seus dados de triagem e documentos foram organizados e estarão disponíveis para o médico durante o atendimento.'
-                          : 'Seus dados de triagem serão enviados ao médico no início da consulta.'}
-                      </p>
+                  ) : (
+                    <div className="mt-6 rounded-2xl p-5 flex items-start gap-4" style={{ backgroundColor: '#F0FDF9', border: `1px solid ${T}30` }}>
+                      <div className="h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: T }}>
+                        <span style={{ color: 'white', fontSize: 14 }}>✦</span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold" style={{ color: N }}>
+                          {summaryStatus === 'loading' ? 'Preparando informações para o médico...' : 'Informações preparadas para o médico'}
+                        </p>
+                        <p className="mt-1 text-xs leading-relaxed" style={{ color: '#475569' }}>
+                          {summaryStatus === 'loading'
+                            ? 'A IA está organizando seus dados clínicos. Isso leva alguns segundos.'
+                            : 'Seus dados de triagem e documentos foram organizados e estarão disponíveis para o médico durante o atendimento.'}
+                        </p>
+                      </div>
                     </div>
-                  </div>
+                  )}
                   {videoError && (
                     <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{videoError}</div>
                   )}
                   <div className="mt-6 flex flex-col-reverse gap-3 border-t pt-5 sm:flex-row sm:items-center sm:justify-between" style={{ borderColor: '#DDE7EE' }}>
                     <button type="button" onClick={() => setActiveStep('payment')} className="rounded-xl px-5 py-3 text-sm font-semibold transition-all hover:bg-slate-50" style={{ border: '1px solid #DDE7EE', color: N }}>Voltar para pagamento</button>
-                    <button type="button" onClick={handleEnterCall} disabled={summaryStatus === 'loading' || videoLoading}
+                    <button type="button" onClick={handleEnterCall} disabled={summaryStatus === 'loading' || summaryStatus === 'error' || videoLoading}
                       className="flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold text-white transition-all disabled:cursor-not-allowed disabled:opacity-50"
                       style={{ backgroundColor: T, boxShadow: `0 4px 16px ${T}35` }}>
                       {videoLoading ? <><SpinnerIcon /> Conectando...</> : <>📹 Entrar na consulta</>}
