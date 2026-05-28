@@ -90,7 +90,6 @@ export default function NovaConsultaPage() {
   const [documentProcessing, setDocumentProcessing] = useState(false)
   const [consultationSummary, setConsultationSummary] = useState('')
   const [summaryStatus, setSummaryStatus] = useState<AiStatus>('idle')
-  const [summaryError, setSummaryError] = useState('')
 
   // Availability check
   const [availabilityChecking, setAvailabilityChecking] = useState(false)
@@ -323,7 +322,6 @@ export default function NovaConsultaPage() {
     setActiveStep('consultation')
     setVideoRoomName(`consulta-${selectedSpecialty.toLowerCase()}-${Date.now()}`)
     setSummaryStatus('loading')
-    setSummaryError('')
     try {
       const response = await fetch(`${API_BASE}/documents/test/prepare-consultation`, {
         method: 'POST',
@@ -341,8 +339,7 @@ export default function NovaConsultaPage() {
       const result = await response.json() as { summary: string }
       setConsultationSummary(result.summary)
       setSummaryStatus('ready')
-    } catch (error) {
-      setSummaryError(error instanceof Error ? error.message : 'Nao foi possivel gerar o resumo da IA.')
+    } catch {
       setSummaryStatus('error')
     }
   }
