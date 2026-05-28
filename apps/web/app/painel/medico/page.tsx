@@ -26,8 +26,10 @@ export default function PainelMedicoPage() {
   const [joining, setJoining] = useState(false)
   const [joinError, setJoinError] = useState('')
   const [activeConsultation, setActiveConsultation] = useState<{
-    patientName: string; specialty: string; aiSummary?: string
-    symptoms?: string; symptomDuration?: string; flags?: Record<string, boolean>
+    consultationId?: string
+    patientName: string
+    specialty: string
+    summary: AiSummary | null
   } | null>(null)
 
   async function handleDoctorLogin() {
@@ -99,10 +101,7 @@ export default function PainelMedicoPage() {
     )
   }
 
-  async function handleJoinRoom(code?: string, consultationData?: {
-    patientName: string; specialty: string; aiSummary?: string
-    symptoms?: string; symptomDuration?: string; flags?: Record<string, boolean>
-  }) {
+  async function handleJoinRoom(code?: string, consultationData?: WaitingItem) {
     const target = (code ?? roomCode).trim()
     if (!target || joining) return
     setJoining(true)
@@ -118,7 +117,29 @@ export default function PainelMedicoPage() {
       setRoomCode(target)
       setVideoToken(data.token)
       setVideoServerUrl(data.serverUrl)
-      if (consultationData) setActiveConsultation(consultationData)
+
+      if (consultationData) {
+        let summary: AiSummary | null = null
+        if (consultationData.consultationId && doctorToken) {
+          // Aceitar consulta → salva doctorId no banco
+          fetch(`${API_BASE}/consultations/${consultationData.consultationId}/accept`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${doctorToken}` },
+          }).catch(() => {})
+          // Buscar resumo da IA do banco
+          const sRes = await fetch(`${API_BASE}/consultations/${consultationData.consultationId}/ai-summary`, {
+            headers: { 'Authorization': `Bearer ${doctorToken}` },
+          })
+          if (sRes.ok) summary = await sRes.json() as AiSummary
+        }
+        setActiveConsultation({
+          consultationId: consultationData.consultationId,
+          patientName: consultationData.patientName,
+          specialty: consultationData.specialty,
+          summary,
+        })
+      }
+
       fetch(`${API_BASE}/video/waiting-room/${encodeURIComponent(target)}`, { method: 'DELETE' }).catch(() => {})
     } catch {
       setJoinError('Nao foi possivel entrar na sala. Verifique o codigo.')
@@ -240,7 +261,20 @@ function Header() {
   )
 }
 
-type WaitingItem = { roomName: string; specialty: string; patientName: string; createdAt: string; aiSummary?: string; symptoms?: string; symptomDuration?: string; flags?: Record<string, boolean> }
+type WaitingItem = { roomName: string; specialty: string; patientName: string; createdAt: string; consultationId?: string }
+
+type AiSummary = {
+  chiefComplaint: string
+  attentionPoints: string[]
+  clinicalHypotheses: string[]
+  probableCid10: string[]
+  objectiveAnswers: string[]
+  suggestedQuestions: string[]
+  limitations: string | null
+  sourceSymptoms: string | null
+  sourceSymptomDuration: string | null
+  sourceFlags: Record<string, boolean>
+}
 
 /* ── LEFT PANEL ── */
 function LeftPanel({ onJoinRoom }: { onJoinRoom: (roomName: string, data?: WaitingItem) => void }) {
@@ -435,37 +469,21 @@ const SPECIALTY_LABELS: Record<string, string> = {
   GASTROENTEROLOGY: 'Gastroenterologia', OTORHINOLARYNGOLOGY: 'Otorrinolaringologia',
 }
 
-type AiSummaryParsed = {
-  queixa_principal?: string
-  pontos_de_atencao?: string[]
-  hipoteses_clinicas?: string[]
-  cid10_provaveis?: string[]
-  respostas_objetivas?: string[]
-  documentos_resumidos?: string[]
-  perguntas_sugeridas_para_o_medico?: string[]
-  limitacoes?: string
-}
-
-function parseAiSummary(raw: string): AiSummaryParsed | null {
-  try { return JSON.parse(raw) as AiSummaryParsed } catch { return null }
-}
-
 /* ── RIGHT PANEL ── */
 function RightPanel({ consultation }: {
-  consultation: { patientName: string; specialty: string; aiSummary?: string; symptoms?: string; symptomDuration?: string; flags?: Record<string, boolean> } | null
+  consultation: { consultationId?: string; patientName: string; specialty: string; summary: AiSummary | null } | null
 }) {
   const flagLabels: Record<string, string> = {
     hasFever: 'Febre', hasPain: 'Dor', hasShortnessOfBreath: 'Falta de ar',
     hasAllergy: 'Alergia', usesMedication: 'Usa medicação', isPregnant: 'Gestante',
   }
-  const activeFlags = consultation?.flags
-    ? Object.entries(consultation.flags).filter(([, v]) => v).map(([k]) => flagLabels[k] ?? k)
+  const s = consultation?.summary
+  const activeFlags = s?.sourceFlags
+    ? Object.entries(s.sourceFlags).filter(([, v]) => v).map(([k]) => flagLabels[k] ?? k)
     : []
-  const parsed = consultation?.aiSummary ? parseAiSummary(consultation.aiSummary) : null
 
   return (
     <div className="flex flex-col gap-4 flex-shrink-0 overflow-y-auto" style={{ width: 280 }}>
-      {/* AI Summary */}
       <div className="bg-white rounded-2xl p-4" style={{ border: '1px solid #E2E8F0' }}>
         <div className="flex items-center gap-2 mb-3">
           <div className="h-5 w-5 rounded flex items-center justify-center flex-shrink-0"
@@ -477,67 +495,37 @@ function RightPanel({ consultation }: {
 
         {!consultation ? (
           <p className="text-xs" style={{ color: '#94A3B8' }}>Entre em uma consulta para ver o resumo do paciente.</p>
+        ) : !s ? (
+          <p className="text-xs" style={{ color: '#94A3B8' }}>Resumo não disponível para esta consulta.</p>
         ) : (
-          <>
-            {/* Queixa + duração */}
-            {consultation.symptoms && (
-              <div className="mb-3 rounded-xl p-3" style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0' }}>
+          <div className="space-y-2">
+            {s.chiefComplaint && (
+              <div className="rounded-xl p-3" style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0' }}>
                 <p className="text-xs font-semibold mb-1" style={{ color: N }}>Queixa principal</p>
-                <p className="text-xs leading-relaxed" style={{ color: '#475569' }}>{consultation.symptoms}</p>
-                {consultation.symptomDuration && (
-                  <p className="text-xs mt-1" style={{ color: '#94A3B8' }}>Duração: {consultation.symptomDuration}</p>
+                <p className="text-xs leading-relaxed" style={{ color: '#475569' }}>{s.chiefComplaint}</p>
+                {s.sourceSymptomDuration && (
+                  <p className="text-xs mt-1" style={{ color: '#94A3B8' }}>Duração: {s.sourceSymptomDuration}</p>
                 )}
               </div>
             )}
-
-            {/* Flags */}
             {activeFlags.length > 0 && (
-              <div className="flex flex-wrap gap-1 mb-3">
+              <div className="flex flex-wrap gap-1">
                 {activeFlags.map(f => (
                   <span key={f} className="text-xs px-2 py-0.5 rounded-full font-medium"
                     style={{ backgroundColor: '#FEF3C7', color: '#D97706' }}>{f}</span>
                 ))}
               </div>
             )}
-
-            {/* Resumo estruturado */}
-            {parsed ? (
-              <div className="space-y-2">
-                {parsed.pontos_de_atencao && parsed.pontos_de_atencao.length > 0 && (
-                  <SummaryBlock title="Pontos de atenção" items={parsed.pontos_de_atencao} />
-                )}
-                {parsed.hipoteses_clinicas && parsed.hipoteses_clinicas.length > 0 && (
-                  <SummaryBlock title="Hipóteses clínicas" items={parsed.hipoteses_clinicas} accent />
-                )}
-                {parsed.cid10_provaveis && parsed.cid10_provaveis.length > 0 && (
-                  <SummaryBlock title="CID-10 prováveis" items={parsed.cid10_provaveis} />
-                )}
-                {parsed.perguntas_sugeridas_para_o_medico && parsed.perguntas_sugeridas_para_o_medico.length > 0 && (
-                  <SummaryBlock title="Perguntas sugeridas" items={parsed.perguntas_sugeridas_para_o_medico} />
-                )}
-                {parsed.documentos_resumidos && parsed.documentos_resumidos.length > 0 && (
-                  <SummaryBlock title="Documentos" items={parsed.documentos_resumidos} />
-                )}
-                {parsed.limitacoes && (
-                  <p className="text-xs italic" style={{ color: '#94A3B8' }}>{parsed.limitacoes}</p>
-                )}
-              </div>
-            ) : consultation.aiSummary ? (
-              <div className="rounded-xl p-3" style={{ backgroundColor: '#F8FFFE', border: `1px solid ${T}25` }}>
-                <p className="text-xs leading-relaxed whitespace-pre-wrap" style={{ color: '#475569' }}>{consultation.aiSummary}</p>
-              </div>
-            ) : (
-              !consultation.symptoms && activeFlags.length === 0 && (
-                <p className="text-xs" style={{ color: '#94A3B8' }}>Resumo não disponível para esta consulta.</p>
-              )
-            )}
-
-            <p className="text-xs mt-2" style={{ color: '#94A3B8' }}>✦ Gerado por IA antes da consulta</p>
-          </>
+            {s.attentionPoints?.length > 0 && <SummaryBlock title="Pontos de atenção" items={s.attentionPoints} />}
+            {s.clinicalHypotheses?.length > 0 && <SummaryBlock title="Hipóteses clínicas" items={s.clinicalHypotheses} accent />}
+            {s.probableCid10?.length > 0 && <SummaryBlock title="CID-10 prováveis" items={s.probableCid10} />}
+            {s.suggestedQuestions?.length > 0 && <SummaryBlock title="Perguntas sugeridas" items={s.suggestedQuestions} />}
+            {s.limitations && <p className="text-xs italic" style={{ color: '#94A3B8' }}>{s.limitations}</p>}
+            <p className="text-xs" style={{ color: '#94A3B8' }}>✦ Gerado por IA antes da consulta</p>
+          </div>
         )}
       </div>
 
-      {/* Patient info */}
       {consultation && (
         <div className="bg-white rounded-2xl p-4" style={{ border: '1px solid #E2E8F0' }}>
           <p className="text-xs font-semibold mb-2" style={{ color: N }}>Dados da consulta</p>

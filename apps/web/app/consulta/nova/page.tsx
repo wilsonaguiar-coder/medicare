@@ -91,6 +91,7 @@ export default function NovaConsultaPage() {
   const [consultationSummary, setConsultationSummary] = useState('')
   const [summaryStatus, setSummaryStatus] = useState<AiStatus>('idle')
   const [summaryError, setSummaryError] = useState('')
+  const [consultationId, setConsultationId] = useState<string | undefined>(undefined)
 
   // Availability check
   const [availabilityChecking, setAvailabilityChecking] = useState(false)
@@ -282,34 +283,15 @@ export default function NovaConsultaPage() {
       setVideoRoomName(roomName)
       setVideoToken(data.token)
       setVideoServerUrl(data.serverUrl)
-      // Criar registro de consulta no banco se autenticado
-      if (authToken) {
-        fetch(`${API_BASE}/consultations`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-          body: JSON.stringify({
-            specialty: selected.key,
-            chiefComplaint: symptoms.trim().slice(0, 200) || 'Consulta',
-            symptoms,
-            symptomDuration: duration,
-            totalAmount: selected.price,
-            patientName: participantName,
-            videoRoomId: roomName,
-          }),
-        }).catch(() => {})
-      }
-      // Notificar médico: sala disponível na fila
+      // Registrar na fila do médico com consultationId (dados clínicos já estão no banco)
       fetch(`${API_BASE}/video/waiting-room`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           roomName,
           specialty: selected.key,
-          patientName: patientName.trim() || email || 'Paciente',
-          aiSummary: consultationSummary || undefined,
-          symptoms: symptoms || undefined,
-          symptomDuration: duration,
-          flags: triageFlags,
+          patientName: participantName,
+          consultationId: consultationId || undefined,
         }),
       }).catch(() => {})
     } catch (err) {
@@ -321,14 +303,45 @@ export default function NovaConsultaPage() {
 
   async function prepareConsultationSummary() {
     setActiveStep('consultation')
-    setVideoRoomName(`consulta-${selectedSpecialty.toLowerCase()}-${Date.now()}`)
+    const roomName = `consulta-${selectedSpecialty.toLowerCase()}-${Date.now()}`
+    setVideoRoomName(roomName)
     setSummaryStatus('loading')
     setSummaryError('')
+
+    let consultId: string | undefined
+    let patId: string | undefined
+
     try {
+      // 1. Criar consulta no banco
+      if (authToken) {
+        const cRes = await fetch(`${API_BASE}/consultations`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+          body: JSON.stringify({
+            specialty: selected.key,
+            chiefComplaint: symptoms.trim().slice(0, 200) || 'Consulta',
+            symptoms,
+            symptomDuration: duration,
+            totalAmount: selected.price,
+            patientName: patientName.trim() || email || 'Paciente',
+            videoRoomId: roomName,
+          }),
+        })
+        if (cRes.ok) {
+          const cData = await cRes.json() as { id: string; patientId: string }
+          consultId = cData.id
+          patId = cData.patientId
+          setConsultationId(consultId)
+        }
+      }
+
+      // 2. Gerar resumo da IA e salvar no banco (consultationId presente → salva automaticamente)
       const response = await fetch(`${API_BASE}/documents/test/prepare-consultation`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          consultationId: consultId,
+          patientId: patId,
           specialty: selected.label,
           symptoms,
           symptomDuration: duration,

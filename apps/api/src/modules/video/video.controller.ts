@@ -23,12 +23,9 @@ export class VideoController {
     roomName: string
     specialty: string
     patientName: string
-    aiSummary?: string
-    symptoms?: string
-    symptomDuration?: string
-    flags?: Record<string, boolean>
+    consultationId?: string
   }) {
-    this.videoService.registerWaitingRoom(body.roomName, body.specialty, body.patientName, body.aiSummary, body.symptoms, body.symptomDuration, body.flags)
+    this.videoService.registerWaitingRoom(body.roomName, body.specialty, body.patientName, body.consultationId)
     return { ok: true }
   }
 
