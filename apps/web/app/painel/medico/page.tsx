@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, lazy, Suspense } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import Image from 'next/image'
 
 const VideoRoom = lazy(() => import('../../consulta/nova/VideoRoom').then((m) => ({ default: m.VideoRoom })))
@@ -17,20 +17,23 @@ export default function PainelMedicoPage() {
   const [joining, setJoining] = useState(false)
   const [joinError, setJoinError] = useState('')
 
-  async function handleJoinRoom() {
-    if (!roomCode.trim() || joining) return
+  async function handleJoinRoom(code?: string) {
+    const target = (code ?? roomCode).trim()
+    if (!target || joining) return
     setJoining(true)
     setJoinError('')
     try {
       const res = await fetch(`${API_BASE}/video/token`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ roomName: roomCode.trim(), participantName: 'Médico' }),
+        body: JSON.stringify({ roomName: target, participantName: 'Médico' }),
       })
       if (!res.ok) throw new Error('Nao foi possivel obter o token.')
       const data = await res.json() as { token: string; serverUrl: string }
+      setRoomCode(target)
       setVideoToken(data.token)
       setVideoServerUrl(data.serverUrl)
+      fetch(`${API_BASE}/video/waiting-room/${encodeURIComponent(target)}`, { method: 'DELETE' }).catch(() => {})
     } catch {
       setJoinError('Nao foi possivel entrar na sala. Verifique o codigo.')
     } finally {
@@ -45,7 +48,7 @@ export default function PainelMedicoPage() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header />
         <main className="flex-1 flex overflow-hidden gap-4 p-4">
-          <LeftPanel />
+          <LeftPanel onJoinRoom={handleJoinRoom} />
           <CenterPanel
             activeTab={activeTab} setActiveTab={setActiveTab}
             videoToken={videoToken} videoServerUrl={videoServerUrl}
@@ -152,12 +155,22 @@ function Header() {
 }
 
 /* ── LEFT PANEL ── */
-function LeftPanel() {
-  const queue = [
-    { name: 'Ana Clara Silva',   age: '24 anos', time: '09:30', status: 'Em andamento', statusColor: T,         initials: 'AC', color: '#7C3AED' },
-    { name: 'João Pedro Costa',  age: '32 anos', time: '10:00', status: 'Aguardando',   statusColor: '#F59E0B', initials: 'JP', color: '#0369A1' },
-    { name: 'Mariana Oliveira',  age: '28 anos', time: '10:30', status: 'Aguardando',   statusColor: '#F59E0B', initials: 'MO', color: '#BE185D' },
-  ]
+function LeftPanel({ onJoinRoom }: { onJoinRoom: (roomName: string) => void }) {
+  const [waiting, setWaiting] = useState<{ roomName: string; specialty: string; patientName: string; createdAt: string }[]>([])
+
+  useEffect(() => {
+    const poll = () => fetch(`${API_BASE}/video/waiting-rooms`).then(r => r.ok ? r.json() : []).then(setWaiting).catch(() => {})
+    poll()
+    const t = setInterval(poll, 5000)
+    return () => clearInterval(t)
+  }, [])
+
+  const COLORS = ['#7C3AED', '#0369A1', '#BE185D', '#D97706', '#059669']
+  const initials = (name: string) => name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()
+  const elapsed = (d: string) => {
+    const mins = Math.floor((Date.now() - new Date(d).getTime()) / 60000)
+    return mins < 1 ? 'Agora' : `${mins}min`
+  }
   const schedule = [
     { time: '11:00', name: 'Carlos Eduardo' },
     { time: '11:30', name: 'Fernanda Lima'  },
@@ -176,29 +189,34 @@ function LeftPanel() {
           </select>
         </div>
         <div className="divide-y divide-slate-50">
-          {queue.map((p, i) => (
-            <div key={i} className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors ${i === 0 ? '' : 'hover:bg-slate-50'}`}
+          {waiting.length === 0 ? (
+            <div className="px-4 py-6 text-center text-xs" style={{ color: '#94A3B8' }}>
+              Nenhum paciente aguardando
+            </div>
+          ) : waiting.map((p, i) => (
+            <div key={p.roomName} className="flex items-center gap-3 px-4 py-3"
               style={{ backgroundColor: i === 0 ? '#F0FDF9' : undefined }}>
               <div className="h-9 w-9 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
-                style={{ backgroundColor: p.color }}>
-                {p.initials}
+                style={{ backgroundColor: COLORS[i % COLORS.length] }}>
+                {initials(p.patientName)}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold truncate" style={{ color: N }}>{p.name}</p>
-                <p className="text-xs" style={{ color: '#94A3B8' }}>{p.age} · {p.time}</p>
+                <p className="text-xs font-semibold truncate" style={{ color: N }}>{p.patientName}</p>
+                <p className="text-xs" style={{ color: '#94A3B8' }}>{elapsed(p.createdAt)} atrás</p>
                 <span className="inline-block mt-0.5 text-xs font-medium px-1.5 py-0.5 rounded-full"
-                  style={{ backgroundColor: `${p.statusColor}15`, color: p.statusColor, fontSize: 10 }}>
-                  {p.status}
+                  style={{ backgroundColor: '#F59E0B15', color: '#F59E0B', fontSize: 10 }}>
+                  Aguardando
                 </span>
               </div>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" strokeWidth="2"><polyline points="9 18 15 12 9 6" /></svg>
+              <button
+                onClick={() => onJoinRoom(p.roomName)}
+                className="shrink-0 rounded-lg px-2 py-1.5 text-xs font-bold text-white transition-all hover:opacity-80"
+                style={{ backgroundColor: T }}>
+                Entrar
+              </button>
             </div>
           ))}
         </div>
-        <button className="py-3 text-xs font-semibold text-center hover:bg-slate-50 transition-colors"
-          style={{ color: T, borderTop: '1px solid #F1F5F9' }}>
-          Ver todos
-        </button>
       </div>
 
       {/* Schedule */}

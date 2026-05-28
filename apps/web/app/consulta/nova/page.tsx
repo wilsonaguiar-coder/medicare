@@ -230,6 +230,16 @@ export default function NovaConsultaPage() {
       setVideoRoomName(roomName)
       setVideoToken(data.token)
       setVideoServerUrl(data.serverUrl)
+      // Notificar médico: sala disponível na fila
+      fetch(`${API_BASE}/video/waiting-room`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          roomName,
+          specialty: selected.key,
+          patientName: patientName.trim() || email || 'Paciente',
+        }),
+      }).catch(() => {})
     } catch (err) {
       setVideoError(err instanceof Error ? err.message : 'Erro ao iniciar video.')
     } finally {
