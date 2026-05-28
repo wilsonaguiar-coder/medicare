@@ -33,7 +33,7 @@ export function VideoRoom({ token, serverUrl, onDisconnect }: VideoRoomProps) {
         connect={true}
         onDisconnected={() => onDisconnect?.()}
         style={{ height: '100%' }}
-        options={{ rtcConfig: { iceServers: ICE_SERVERS } }}
+        connectOptions={{ rtcConfig: { iceServers: ICE_SERVERS } }}
       >
         <VideoConference />
         <RoomAudioRenderer />
