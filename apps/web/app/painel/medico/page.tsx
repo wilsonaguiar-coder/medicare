@@ -133,7 +133,7 @@ export default function PainelMedicoPage() {
           if (sRes.ok) summary = await sRes.json() as AiSummary
         }
         setActiveConsultation({
-          consultationId: consultationData.consultationId,
+          ...(consultationData.consultationId ? { consultationId: consultationData.consultationId } : {}),
           patientName: consultationData.patientName,
           specialty: consultationData.specialty,
           summary,
