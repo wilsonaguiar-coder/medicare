@@ -11,7 +11,7 @@ import { Server, Socket } from 'socket.io'
 import { Logger } from '@nestjs/common'
 import type { WaitingRoom } from './video.service'
 
-@WebSocketGateway({ cors: { origin: '*' } })
+@WebSocketGateway({ cors: { origin: '*' }, path: '/api/socket.io/' })
 export class VideoGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server

@@ -290,11 +290,8 @@ function LeftPanel({ onJoinRoom }: { onJoinRoom: (roomName: string, data?: Waiti
     // Carga inicial via REST
     fetch(`${API_BASE}/video/waiting-rooms`).then(r => r.ok ? r.json() : []).then(setWaiting).catch(() => {})
 
-    // Atualizações em tempo real via WebSocket
-    const WS_URL = process.env.NEXT_PUBLIC_API_URL
-      ? process.env.NEXT_PUBLIC_API_URL.replace('/api/v1', '')
-      : ''
-    const socket = io(WS_URL, { transports: ['websocket', 'polling'] })
+    // Atualizações em tempo real via WebSocket (mesmo origin, path sob /api para o Nginx rotear à porta 3001)
+    const socket = io({ path: '/api/socket.io/', transports: ['websocket', 'polling'] })
     socket.on('queue:updated', (rooms: WaitingItem[]) => setWaiting(rooms))
     return () => { socket.disconnect() }
   }, [])
