@@ -9,8 +9,9 @@ import {
 } from '@nestjs/websockets'
 import { Server, Socket } from 'socket.io'
 import { Logger } from '@nestjs/common'
+import type { WaitingRoom } from './video.service'
 
-@WebSocketGateway({ cors: { origin: process.env.WEB_URL ?? 'http://localhost:3000' } })
+@WebSocketGateway({ cors: { origin: '*' } })
 export class VideoGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server
@@ -23,6 +24,10 @@ export class VideoGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   handleDisconnect(client: Socket) {
     this.logger.log(`Cliente desconectado: ${client.id}`)
+  }
+
+  emitQueueUpdate(rooms: WaitingRoom[]) {
+    this.server.emit('queue:updated', rooms)
   }
 
   @SubscribeMessage('join-room')

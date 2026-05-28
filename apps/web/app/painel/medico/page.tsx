@@ -2,6 +2,7 @@
 
 import { useState, useEffect, lazy, Suspense } from 'react'
 import Image from 'next/image'
+import { io } from 'socket.io-client'
 
 const VideoRoom = lazy(() => import('../../consulta/nova/VideoRoom').then((m) => ({ default: m.VideoRoom })))
 
@@ -286,10 +287,16 @@ function LeftPanel({ onJoinRoom }: { onJoinRoom: (roomName: string, data?: Waiti
   const [waiting, setWaiting] = useState<WaitingItem[]>([])
 
   useEffect(() => {
-    const poll = () => fetch(`${API_BASE}/video/waiting-rooms`).then(r => r.ok ? r.json() : []).then(setWaiting).catch(() => {})
-    poll()
-    const t = setInterval(poll, 5000)
-    return () => clearInterval(t)
+    // Carga inicial via REST
+    fetch(`${API_BASE}/video/waiting-rooms`).then(r => r.ok ? r.json() : []).then(setWaiting).catch(() => {})
+
+    // Atualizações em tempo real via WebSocket
+    const WS_URL = process.env.NEXT_PUBLIC_API_URL
+      ? process.env.NEXT_PUBLIC_API_URL.replace('/api/v1', '')
+      : ''
+    const socket = io(WS_URL, { transports: ['websocket', 'polling'] })
+    socket.on('queue:updated', (rooms: WaitingItem[]) => setWaiting(rooms))
+    return () => { socket.disconnect() }
   }, [])
 
   const COLORS = ['#7C3AED', '#0369A1', '#BE185D', '#D97706', '#059669']

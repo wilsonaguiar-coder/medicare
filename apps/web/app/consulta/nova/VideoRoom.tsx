@@ -2,6 +2,7 @@
 
 import { LiveKitRoom, VideoConference, RoomAudioRenderer } from '@livekit/components-react'
 import '@livekit/components-styles'
+import Image from 'next/image'
 
 interface VideoRoomProps {
   token: string
@@ -24,7 +25,7 @@ const ICE_SERVERS = [
 
 export function VideoRoom({ token, serverUrl, onDisconnect }: VideoRoomProps) {
   return (
-    <div style={{ height: '560px', borderRadius: '16px', overflow: 'hidden', background: '#0A2342' }}>
+    <div style={{ position: 'relative', height: '560px', borderRadius: '16px', overflow: 'hidden', background: '#0A2342' }}>
       <LiveKitRoom
         serverUrl={serverUrl}
         token={token}
@@ -38,6 +39,10 @@ export function VideoRoom({ token, serverUrl, onDisconnect }: VideoRoomProps) {
         <VideoConference />
         <RoomAudioRenderer />
       </LiveKitRoom>
+      {/* Logo sobreposta — troque /logo.png pela versão com fundo transparente */}
+      <div style={{ position: 'absolute', top: 12, left: 16, pointerEvents: 'none', opacity: 0.75, zIndex: 10 }}>
+        <Image src="/logo.png" alt="Medicare" width={80} height={28} style={{ objectFit: 'contain' }} />
+      </div>
     </div>
   )
 }
