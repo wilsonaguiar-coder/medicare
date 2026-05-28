@@ -19,8 +19,16 @@ export class VideoController {
 
   @Post('waiting-room')
   @ApiOperation({ summary: 'Registrar paciente aguardando na sala' })
-  registerWaiting(@Body() body: { roomName: string; specialty: string; patientName: string }) {
-    this.videoService.registerWaitingRoom(body.roomName, body.specialty, body.patientName)
+  registerWaiting(@Body() body: {
+    roomName: string
+    specialty: string
+    patientName: string
+    aiSummary?: string
+    symptoms?: string
+    symptomDuration?: string
+    flags?: Record<string, boolean>
+  }) {
+    this.videoService.registerWaitingRoom(body.roomName, body.specialty, body.patientName, body.aiSummary, body.symptoms, body.symptomDuration, body.flags)
     return { ok: true }
   }
 

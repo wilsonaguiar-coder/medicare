@@ -16,8 +16,15 @@ export default function PainelMedicoPage() {
   const [videoServerUrl, setVideoServerUrl] = useState<string | null>(null)
   const [joining, setJoining] = useState(false)
   const [joinError, setJoinError] = useState('')
+  const [activeConsultation, setActiveConsultation] = useState<{
+    patientName: string; specialty: string; aiSummary?: string
+    symptoms?: string; symptomDuration?: string; flags?: Record<string, boolean>
+  } | null>(null)
 
-  async function handleJoinRoom(code?: string) {
+  async function handleJoinRoom(code?: string, consultationData?: {
+    patientName: string; specialty: string; aiSummary?: string
+    symptoms?: string; symptomDuration?: string; flags?: Record<string, boolean>
+  }) {
     const target = (code ?? roomCode).trim()
     if (!target || joining) return
     setJoining(true)
@@ -33,6 +40,7 @@ export default function PainelMedicoPage() {
       setRoomCode(target)
       setVideoToken(data.token)
       setVideoServerUrl(data.serverUrl)
+      if (consultationData) setActiveConsultation(consultationData)
       fetch(`${API_BASE}/video/waiting-room/${encodeURIComponent(target)}`, { method: 'DELETE' }).catch(() => {})
     } catch {
       setJoinError('Nao foi possivel entrar na sala. Verifique o codigo.')
@@ -55,9 +63,9 @@ export default function PainelMedicoPage() {
             roomCode={roomCode} setRoomCode={setRoomCode}
             joining={joining} joinError={joinError}
             onJoinRoom={handleJoinRoom}
-            onLeaveRoom={() => { setVideoToken(null); setVideoServerUrl(null); setRoomCode('') }}
+            onLeaveRoom={() => { setVideoToken(null); setVideoServerUrl(null); setRoomCode(''); setActiveConsultation(null) }}
           />
-          <RightPanel />
+          <RightPanel consultation={activeConsultation} />
         </main>
       </div>
     </div>
@@ -154,9 +162,11 @@ function Header() {
   )
 }
 
+type WaitingItem = { roomName: string; specialty: string; patientName: string; createdAt: string; aiSummary?: string; symptoms?: string; symptomDuration?: string; flags?: Record<string, boolean> }
+
 /* ── LEFT PANEL ── */
-function LeftPanel({ onJoinRoom }: { onJoinRoom: (roomName: string) => void }) {
-  const [waiting, setWaiting] = useState<{ roomName: string; specialty: string; patientName: string; createdAt: string }[]>([])
+function LeftPanel({ onJoinRoom }: { onJoinRoom: (roomName: string, data?: WaitingItem) => void }) {
+  const [waiting, setWaiting] = useState<WaitingItem[]>([])
 
   useEffect(() => {
     const poll = () => fetch(`${API_BASE}/video/waiting-rooms`).then(r => r.ok ? r.json() : []).then(setWaiting).catch(() => {})
@@ -209,7 +219,7 @@ function LeftPanel({ onJoinRoom }: { onJoinRoom: (roomName: string) => void }) {
                 </span>
               </div>
               <button
-                onClick={() => onJoinRoom(p.roomName)}
+                onClick={() => onJoinRoom(p.roomName, p)}
                 className="shrink-0 rounded-lg px-2 py-1.5 text-xs font-bold text-white transition-all hover:opacity-80"
                 style={{ backgroundColor: T }}>
                 Entrar
@@ -341,83 +351,80 @@ function CenterPanel({ activeTab, setActiveTab, videoToken, videoServerUrl, room
 }
 
 /* ── RIGHT PANEL ── */
-function RightPanel() {
-  const docs = [
-    { name: 'Exame de Sangue', size: 'PDF · 1,2 MB' },
-    { name: 'Vitamina D',      size: 'PDF · 430 KB' },
-    { name: 'Receita Anterior',size: 'PDF · 250 KB' },
-  ]
+function RightPanel({ consultation }: {
+  consultation: { patientName: string; specialty: string; aiSummary?: string; symptoms?: string; symptomDuration?: string; flags?: Record<string, boolean> } | null
+}) {
+  const flagLabels: Record<string, string> = {
+    hasFever: 'Febre', hasPain: 'Dor', hasShortnessOfBreath: 'Falta de ar',
+    hasAllergy: 'Alergia', usesMedication: 'Usa medicação', isPregnant: 'Gestante',
+  }
+  const activeFlags = consultation?.flags ? Object.entries(consultation.flags).filter(([, v]) => v).map(([k]) => flagLabels[k] ?? k) : []
 
   return (
     <div className="flex flex-col gap-4 flex-shrink-0 overflow-y-auto" style={{ width: 280 }}>
       {/* AI Summary */}
       <div className="bg-white rounded-2xl p-4" style={{ border: '1px solid #E2E8F0' }}>
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <div className="h-5 w-5 rounded flex items-center justify-center flex-shrink-0"
-              style={{ background: `linear-gradient(135deg, #7C3AED, ${T})` }}>
-              <span style={{ color: 'white', fontSize: 9 }}>✦</span>
-            </div>
-            <p className="text-xs font-semibold" style={{ color: N }}>Resumo inteligente (IA)</p>
+        <div className="flex items-center gap-2 mb-3">
+          <div className="h-5 w-5 rounded flex items-center justify-center flex-shrink-0"
+            style={{ background: `linear-gradient(135deg, #7C3AED, ${T})` }}>
+            <span style={{ color: 'white', fontSize: 9 }}>✦</span>
           </div>
-          <button className="text-slate-400 hover:text-slate-600 text-xs leading-none">✕</button>
+          <p className="text-xs font-semibold" style={{ color: N }}>Resumo inteligente (IA)</p>
         </div>
 
-        <p className="text-xs mb-2" style={{ color: '#64748B' }}>Com base nos documentos enviados, a IA identificou os seguintes pontos relevantes:</p>
-
-        <ul className="space-y-1.5 mb-3">
-          {[
-            'Hemograma normal',
-            'Glicemia em jejum: 92 mg/dL',
-            'Vitamina D: 28 ng/mL (abaixo do ideal)',
-            'Colesterol total: 178 mg/dL',
-            'Função renal normal',
-          ].map(item => (
-            <li key={item} className="flex items-start gap-2 text-xs" style={{ color: '#475569' }}>
-              <span className="mt-0.5 flex-shrink-0 font-bold" style={{ color: T }}>✓</span>
-              {item}
-            </li>
-          ))}
-        </ul>
-
-        <div className="rounded-xl p-3 mb-3" style={{ backgroundColor: '#F8FFFE', border: `1px solid ${T}25` }}>
-          <p className="text-xs font-semibold mb-1" style={{ color: N }}>Sugestão da IA</p>
-          <p className="text-xs leading-relaxed" style={{ color: '#475569' }}>
-            Investigar causas de cefaleia associada à fadiga. Avaliar rotina de sono e níveis de vitamina D.
-          </p>
-        </div>
-
-        <p className="text-xs" style={{ color: '#94A3B8' }}>✦ Gerado por IA · 1 min atrás</p>
-      </div>
-
-      {/* Documents */}
-      <div className="bg-white rounded-2xl overflow-hidden" style={{ border: '1px solid #E2E8F0' }}>
-        <div className="px-4 py-3" style={{ borderBottom: '1px solid #F1F5F9' }}>
-          <p className="text-xs font-semibold" style={{ color: N }}>Documentos do paciente</p>
-        </div>
-        <div className="divide-y">
-          {docs.map(doc => (
-            <div key={doc.name} className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 cursor-pointer transition-colors">
-              <div className="h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                style={{ backgroundColor: '#FEF3C7' }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                  <polyline points="14 2 14 8 20 8" />
-                </svg>
+        {!consultation ? (
+          <p className="text-xs" style={{ color: '#94A3B8' }}>Entre em uma consulta para ver o resumo do paciente.</p>
+        ) : !consultation.aiSummary ? (
+          <p className="text-xs" style={{ color: '#94A3B8' }}>Resumo não disponível para esta consulta.</p>
+        ) : (
+          <>
+            {consultation.symptoms && (
+              <div className="mb-3">
+                <p className="text-xs font-semibold mb-1" style={{ color: N }}>Queixa principal</p>
+                <p className="text-xs leading-relaxed" style={{ color: '#475569' }}>{consultation.symptoms}</p>
+                {consultation.symptomDuration && (
+                  <p className="text-xs mt-1" style={{ color: '#94A3B8' }}>Duração: {consultation.symptomDuration}</p>
+                )}
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium truncate" style={{ color: N }}>{doc.name}</p>
-                <p className="text-xs" style={{ color: '#94A3B8' }}>{doc.size}</p>
+            )}
+
+            {activeFlags.length > 0 && (
+              <div className="flex flex-wrap gap-1 mb-3">
+                {activeFlags.map(f => (
+                  <span key={f} className="text-xs px-2 py-0.5 rounded-full font-medium"
+                    style={{ backgroundColor: '#FEF3C7', color: '#D97706' }}>{f}</span>
+                ))}
               </div>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" strokeWidth="2"><polyline points="9 18 15 12 9 6" /></svg>
+            )}
+
+            <div className="rounded-xl p-3" style={{ backgroundColor: '#F8FFFE', border: `1px solid ${T}25` }}>
+              <p className="text-xs font-semibold mb-1" style={{ color: N }}>Resumo da IA</p>
+              <p className="text-xs leading-relaxed whitespace-pre-wrap" style={{ color: '#475569' }}>
+                {consultation.aiSummary}
+              </p>
             </div>
-          ))}
-        </div>
-        <button className="w-full py-3 text-xs font-semibold text-center transition-colors hover:opacity-90"
-          style={{ backgroundColor: T, color: 'white' }}>
-          Ver todos os documentos
-        </button>
+
+            <p className="text-xs mt-2" style={{ color: '#94A3B8' }}>✦ Gerado por IA antes da consulta</p>
+          </>
+        )}
       </div>
+
+      {/* Patient info */}
+      {consultation && (
+        <div className="bg-white rounded-2xl p-4" style={{ border: '1px solid #E2E8F0' }}>
+          <p className="text-xs font-semibold mb-2" style={{ color: N }}>Dados da consulta</p>
+          <div className="space-y-1.5">
+            <div className="flex justify-between text-xs">
+              <span style={{ color: '#94A3B8' }}>Paciente</span>
+              <span className="font-medium" style={{ color: N }}>{consultation.patientName}</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span style={{ color: '#94A3B8' }}>Especialidade</span>
+              <span className="font-medium" style={{ color: N }}>{consultation.specialty}</span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

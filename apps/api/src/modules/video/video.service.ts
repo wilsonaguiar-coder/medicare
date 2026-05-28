@@ -7,6 +7,10 @@ export interface WaitingRoom {
   specialty: string
   patientName: string
   createdAt: Date
+  aiSummary?: string
+  symptoms?: string
+  symptomDuration?: string
+  flags?: Record<string, boolean>
 }
 
 @Injectable()
@@ -15,8 +19,16 @@ export class VideoService {
 
   constructor(private readonly config: ConfigService) {}
 
-  registerWaitingRoom(roomName: string, specialty: string, patientName: string): void {
-    this.waitingRooms.set(roomName, { roomName, specialty, patientName, createdAt: new Date() })
+  registerWaitingRoom(
+    roomName: string,
+    specialty: string,
+    patientName: string,
+    aiSummary?: string,
+    symptoms?: string,
+    symptomDuration?: string,
+    flags?: Record<string, boolean>,
+  ): void {
+    this.waitingRooms.set(roomName, { roomName, specialty, patientName, createdAt: new Date(), aiSummary, symptoms, symptomDuration, flags })
   }
 
   removeWaitingRoom(roomName: string): void {

@@ -238,6 +238,10 @@ export default function NovaConsultaPage() {
           roomName,
           specialty: selected.key,
           patientName: patientName.trim() || email || 'Paciente',
+          aiSummary: consultationSummary || undefined,
+          symptoms: symptoms || undefined,
+          symptomDuration: duration,
+          flags: triageFlags,
         }),
       }).catch(() => {})
     } catch (err) {
