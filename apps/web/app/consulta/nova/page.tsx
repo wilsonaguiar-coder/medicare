@@ -768,44 +768,7 @@ function SummaryCard({ label, value }: { label: string; value: string }) {
   return <div className="rounded-2xl p-5" style={{ backgroundColor: '#F8FAFC', border: '1px solid #DDE7EE' }}><p className="text-xs" style={{ color: '#64748B' }}>{label}</p><p className="mt-1 text-sm font-bold" style={{ color: N }}>{value}</p></div>
 }
 
-function AiSummaryCard({ status, summary, error }: { status: AiStatus; summary: string; error: string }) {
-  const parsed = parseSummary(summary)
-  return (
-    <div className="mt-6 rounded-2xl p-5" style={{ backgroundColor: '#F8FAFC', border: '1px solid #DDE7EE' }}>
-      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-        <div><p className="text-sm font-semibold" style={{ color: N }}>Resumo da IA para apoio medico</p><p className="mt-1 text-xs" style={{ color: '#64748B' }}>Gerado a partir da pre-triagem, respostas objetivas e textos extraidos dos documentos.</p></div>
-        <span className="rounded-full px-3 py-1 text-xs font-semibold" style={{ backgroundColor: status === 'ready' ? '#E6FAF6' : '#EEF2F7', color: status === 'error' ? '#BE123C' : T }}>
-          {status === 'loading' ? 'Gerando...' : status === 'ready' ? 'Concluido' : status === 'error' ? 'Erro' : 'Aguardando'}
-        </span>
-      </div>
-      {status === 'loading' && <p className="mt-5 text-sm" style={{ color: '#64748B' }}>A IA esta organizando as informacoes para o medico.</p>}
-      {status === 'error' && <p className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</p>}
-      {status === 'ready' && parsed && (
-        <div className="mt-5 grid gap-4">
-          <SummarySection title="Queixa principal" value={parsed.queixa_principal} />
-          <SummaryList title="Pontos de atencao" values={parsed.pontos_de_atencao} />
-          <SummaryList title="Sugestoes de doencas / hipoteses clinicas" values={parsed.hipoteses_clinicas} />
-          <SummaryList title="CID-10 provaveis" values={parsed.cid10_provaveis} />
-          <SummaryList title="Respostas objetivas" values={parsed.respostas_objetivas} />
-          <SummaryList title="Documentos resumidos" values={parsed.documentos_resumidos} />
-          <SummaryList title="Perguntas sugeridas para o medico" values={parsed.perguntas_sugeridas_para_o_medico} />
-          <SummarySection title="Limitacoes" value={parsed.limitacoes} />
-        </div>
-      )}
-      {status === 'ready' && !parsed && <pre className="mt-5 overflow-auto rounded-xl bg-white p-4 text-xs" style={{ color: '#475569' }}>{summary}</pre>}
-    </div>
-  )
-}
 
-function SummarySection({ title, value }: { title: string; value: string | undefined }) {
-  if (!value) return null
-  return <div className="rounded-xl bg-white p-4" style={{ border: '1px solid #E2E8F0' }}><p className="text-xs font-semibold" style={{ color: T }}>{title}</p><p className="mt-2 text-sm leading-relaxed" style={{ color: '#475569' }}>{value}</p></div>
-}
-
-function SummaryList({ title, values }: { title: string; values: string[] | undefined }) {
-  if (!values || values.length === 0) return null
-  return <div className="rounded-xl bg-white p-4" style={{ border: '1px solid #E2E8F0' }}><p className="text-xs font-semibold" style={{ color: T }}>{title}</p><ul className="mt-2 space-y-1 text-sm leading-relaxed" style={{ color: '#475569' }}>{values.map((v, i) => <li key={`${title}-${i}`}>- {v}</li>)}</ul></div>
-}
 
 function SpinnerIcon() {
   return (
@@ -838,19 +801,3 @@ async function getApiError(response: Response) {
   }
 }
 
-function parseSummary(summary: string) {
-  try {
-    return JSON.parse(summary) as {
-      queixa_principal?: string
-      pontos_de_atencao?: string[]
-      hipoteses_clinicas?: string[]
-      cid10_provaveis?: string[]
-      respostas_objetivas?: string[]
-      documentos_resumidos?: string[]
-      perguntas_sugeridas_para_o_medico?: string[]
-      limitacoes?: string
-    }
-  } catch {
-    return null
-  }
-}
