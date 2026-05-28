@@ -88,7 +88,6 @@ export default function NovaConsultaPage() {
   const [documents, setDocuments] = useState<UploadedDocument[]>([])
   const [documentError, setDocumentError] = useState('')
   const [documentProcessing, setDocumentProcessing] = useState(false)
-  const [consultationSummary, setConsultationSummary] = useState('')
   const [summaryStatus, setSummaryStatus] = useState<AiStatus>('idle')
   const [summaryError, setSummaryError] = useState('')
   const [consultationId, setConsultationId] = useState<string | undefined>(undefined)
@@ -351,8 +350,6 @@ export default function NovaConsultaPage() {
         }),
       })
       if (!response.ok) throw new Error(await getApiError(response))
-      const result = await response.json() as { summary: string }
-      setConsultationSummary(result.summary)
       setSummaryStatus('ready')
     } catch (err) {
       setSummaryStatus('error')
