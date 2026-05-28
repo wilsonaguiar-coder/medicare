@@ -44,8 +44,20 @@ export class ConsultationsController {
     return this.consultationsService.findAiSummaryByConsultation(id)
   }
 
+  @Post(':id/payment/authorize')
+  @ApiOperation({ summary: 'Paciente autoriza o pagamento (reserva o valor)' })
+  authorizePayment(@Param('id') id: string) {
+    return this.consultationsService.authorizePayment(id)
+  }
+
+  @Post(':id/cancel')
+  @ApiOperation({ summary: 'Cancelar consulta e liberar pré-autorização' })
+  cancel(@Param('id') id: string) {
+    return this.consultationsService.cancelConsultation(id)
+  }
+
   @Post(':id/accept')
-  @ApiOperation({ summary: 'Médico aceita a consulta' })
+  @ApiOperation({ summary: 'Médico aceita a consulta e captura o pagamento' })
   accept(@Param('id') id: string, @CurrentUser() user: { id: string }) {
     return this.consultationsService.acceptByDoctor(id, user.id)
   }

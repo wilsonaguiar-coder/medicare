@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
+import { randomUUID } from 'crypto'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Consultation } from './entities/consultation.entity'
@@ -107,12 +108,37 @@ export class ConsultationsService {
     return this.aiSummaryRepo.save(entity)
   }
 
+  async authorizePayment(id: string): Promise<Consultation> {
+    const consultation = await this.findById(id)
+    // TODO Fase 2: substituir por Stripe PaymentIntents.create() ou MP preference
+    // const intent = await stripe.paymentIntents.create({ amount: consultation.totalAmount * 100, currency: 'brl', capture_method: 'manual' })
+    // consultation.paymentIntentId = intent.id
+    consultation.paymentIntentId = `mock_pi_${randomUUID()}`
+    consultation.paymentStatus = 'AUTHORIZED'
+    consultation.status = 'WAITING_DOCTOR'
+    return this.consultationRepo.save(consultation)
+  }
+
   async acceptByDoctor(id: string, doctorId: string): Promise<Consultation> {
     const consultation = await this.findById(id)
     consultation.doctorId = doctorId
     consultation.status = 'IN_PROGRESS'
     consultation.startedAt = new Date()
+    // TODO Fase 2: substituir por Stripe PaymentIntents.capture(consultation.paymentIntentId)
+    if (consultation.paymentStatus === 'AUTHORIZED') {
+      consultation.paymentStatus = 'CAPTURED'
+    }
     await this.aiSummaryRepo.update({ consultationId: id }, { doctorId })
+    return this.consultationRepo.save(consultation)
+  }
+
+  async cancelConsultation(id: string): Promise<Consultation> {
+    const consultation = await this.findById(id)
+    consultation.status = 'CANCELLED'
+    // TODO Fase 2: substituir por Stripe PaymentIntents.cancel(consultation.paymentIntentId)
+    if (consultation.paymentStatus === 'AUTHORIZED') {
+      consultation.paymentStatus = 'RELEASED'
+    }
     return this.consultationRepo.save(consultation)
   }
 

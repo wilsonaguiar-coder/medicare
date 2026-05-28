@@ -331,6 +331,11 @@ export default function NovaConsultaPage() {
           consultId = cData.id
           patId = cData.patientId
           setConsultationId(consultId)
+          // Pré-autorizar pagamento (reserva o valor — captura ocorre quando médico aceitar)
+          await fetch(`${API_BASE}/consultations/${consultId}/payment/authorize`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${authToken}` },
+          })
         }
       }
 

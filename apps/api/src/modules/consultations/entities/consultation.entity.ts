@@ -57,6 +57,17 @@ export class Consultation {
   @Column({ nullable: true })
   videoRoomId: string
 
+  // Pagamento — substituir mock por Stripe/MP na Fase 2
+  @Column({ nullable: true })
+  paymentIntentId: string
+
+  @Column({
+    type: 'enum',
+    enum: ['PENDING', 'AUTHORIZED', 'CAPTURED', 'RELEASED'],
+    default: 'PENDING',
+  })
+  paymentStatus: string
+
   @Column({ nullable: true, type: 'timestamp' })
   startedAt: Date
 
