@@ -218,7 +218,7 @@ export default function NovaConsultaPage() {
     setVideoLoading(true)
     setVideoError(null)
     try {
-      const roomName = `consulta-${selected.key.toLowerCase()}-${Date.now()}`
+      const roomName = videoRoomName ?? `consulta-${selected.key.toLowerCase()}-${Date.now()}`
       const participantName = patientName.trim() || email || 'Paciente'
       const res = await fetch(`${API_BASE}/video/token`, {
         method: 'POST',
@@ -239,6 +239,7 @@ export default function NovaConsultaPage() {
 
   async function prepareConsultationSummary() {
     setActiveStep('consultation')
+    setVideoRoomName(`consulta-${selectedSpecialty.toLowerCase()}-${Date.now()}`)
     setSummaryStatus('loading')
     setSummaryError('')
     try {
@@ -534,7 +535,22 @@ export default function NovaConsultaPage() {
             <section className="mt-8 space-y-4">
               {!videoToken ? (
                 <div className="rounded-2xl bg-white p-6 shadow-sm" style={{ border: '1px solid #E2E8F0' }}>
-                  <div className="mb-6"><p className="text-xs font-semibold" style={{ color: T }}>{selected.label}</p><h2 className="mt-2 text-xl font-bold" style={{ color: N }}>Sala de consulta</h2><p className="mt-1 text-sm" style={{ color: '#64748B' }}>Resumo enviado ao medico. Quando estiver pronto, clique em Entrar na consulta para iniciar a videochamada.</p></div>
+                  <div className="mb-6">
+                    <p className="text-xs font-semibold" style={{ color: T }}>{selected.label}</p>
+                    <h2 className="mt-2 text-xl font-bold" style={{ color: N }}>Sala de consulta</h2>
+                    <p className="mt-1 text-sm" style={{ color: '#64748B' }}>Compartilhe o código abaixo com o médico. Quando estiver pronto, clique em Entrar na consulta.</p>
+                  </div>
+                  {videoRoomName && (
+                    <div className="mb-5 rounded-xl p-4" style={{ backgroundColor: '#F0FBF8', border: '1.5px solid #17B89033' }}>
+                      <p className="mb-2 text-xs font-semibold uppercase tracking-wide" style={{ color: T }}>Código da sala — informe ao médico</p>
+                      <div className="flex items-center gap-3">
+                        <code className="flex-1 rounded-lg px-3 py-2 text-sm font-mono font-bold select-all break-all" style={{ backgroundColor: '#0A2342', color: 'white' }}>{videoRoomName}</code>
+                        <button type="button" onClick={() => navigator.clipboard.writeText(videoRoomName)}
+                          className="shrink-0 rounded-lg px-3 py-2 text-xs font-semibold transition-all hover:opacity-80"
+                          style={{ backgroundColor: T, color: 'white' }}>Copiar</button>
+                      </div>
+                    </div>
+                  )}
                   <div className="grid gap-4 md:grid-cols-3"><SummaryCard label="Status" value="Aguardando medico" /><SummaryCard label="Pre-triagem" value="Registrada" /><SummaryCard label="Documentos" value={`${documents.length} processado${documents.length === 1 ? '' : 's'}`} /></div>
                   <AiSummaryCard status={summaryStatus} summary={consultationSummary} error={summaryError} />
                   {videoError && (
